@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔥 2FA Attacks - Complete Working Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: #0d1117;
+            color: #c9d1d9;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #ff4444, #cc0000);
+            padding: 20px;
+            text-align: center;
+            color: white;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .demo-section {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .demo-section h2 {
+            color: #f85149;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        
+        .demo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .demo-card {
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .demo-card h3 {
+            color: #58a6ff;
+            margin-bottom: 10px;
+        }
+        
+        .demo-btn {
+            background: linear-gradient(135deg, #238636, #2ea043);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 5px 5px 5px 0;
+            transition: all 0.2s;
+        }
+        
+        .demo-btn:hover {
+            background: linear-gradient(135deg, #2ea043, #238636);
+            transform: translateY(-1px);
+        }
+        
+        .phishing-btn {
+            background: linear-gradient(135deg, #f85149, #da3633);
+        }
+        
+        .phishing-btn:hover {
+            background: linear-gradient(135deg, #da3633, #f85149);
+        }
+        
+        .mitm-btn {
+            background: linear-gradient(135deg, #58a6ff, #1f6feb);
+        }
+        
+        .mitm-btn:hover {
+            background: linear-gradient(135deg, #1f6feb, #58a6ff);
+        }
+        
+        .simswap-btn {
+            background: linear-gradient(135deg, #a5a5a5, #656d76);
+        }
+        
+        .simswap-btn:hover {
+            background: linear-gradient(135deg, #656d76, #a5a5a5);
+        }
+        
+        .results-area {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .success { color: #56d364; }
+        .error { color: #f85149; }
+        .info { color: #58a6ff; }
+        .warning { color: #e3b341; }
+        
+        .status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #21262d;
+            border-top: 1px solid #30363d;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #56d364;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .presentation-flow {
+            background: #161b22;
+            border-left: 4px solid #f85149;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .flow-step {
+            margin: 10px 0;
+            padding: 10px 0;
+            border-bottom: 1px solid #30363d;
+        }
+        
+        .flow-step:last-child {
+            border-bottom: none;
+        }
+        
+        .step-title {
+            color: #f85149;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .quick-links {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .quick-link {
+            background: #238636;
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .quick-link:hover {
+            background: #2ea043;
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔥 2FA ATTACKS - Complete Working Demo</h1>
+        <p>Live Attack Demonstrations & Evidence Collection</p>
+    </div>
+
+    <div class="container">
+        <!-- Quick Links -->
+        <div class="quick-links">
+            <a href="http://localhost:3000" target="_blank" class="quick-link">🏠 Main Dashboard</a>
+            <a href="#" onclick="window.open('live-phishing-bank.html')" class="quick-link">🏦 Fake Bank</a>
+            <a href="#" onclick="window.open('live-phishing-gmail.html')" class="quick-link">📧 Fake Gmail</a>
+            <a href="#" onclick="testServerConnection()" class="quick-link">🔧 Test Server</a>
+        </div>
+
+        <!-- Presentation Flow Guide -->
+        <div class="presentation-flow">
+            <h2>🎯 PRESENTATION FLOW GUIDE</h2>
+            <div class="flow-step">
+                <div class="step-title">1. 🎣 PHISHING ATTACK DEMO</div>
+                <div>Show fake banking site → Enter credentials → Display captured data with real attack ID</div>
+            </div>
+            <div class="flow-step">
+                <div class="step-title">2. 🔄 MITM ATTACK DEMO</div>
+                <div>Simulate traffic interception → Capture 2FA codes → Show intercepted authentication data</div>
+            </div>
+            <div class="flow-step">
+                <div class="step-title">3. 📱 SIM SWAP ATTACK DEMO</div>
+                <div>Initiate phone hijacking → Execute SIM transfer → Demonstrate complete phone control</div>
+            </div>
+            <div class="flow-step">
+                <div class="step-title">4. 📊 EVIDENCE SUMMARY</div>
+                <div>Show all captured evidence → Point to real attack IDs → Prove 2FA bypass</div>
+            </div>
+        </div>
+
+        <!-- Attack Demonstrations -->
+        <div class="demo-section">
+            <h2>🎣 PHISHING ATTACK DEMONSTRATION</h2>
+            <div class="demo-grid">
+                <div class="demo-card">
+                    <h3>Live Phishing Sites</h3>
+                    <p>Open realistic fake websites that capture credentials</p>
+                    <br>
+                    <button class="demo-btn phishing-btn" onclick="openFakeBankSite()">🏦 Open Fake Bank Site</button>
+                    <button class="demo-btn phishing-btn" onclick="openFakeGmailSite()">📧 Open Fake Gmail Site</button>
+                    <button class="demo-btn phishing-btn" onclick="prefillDemoCredentials()">📝 Pre-fill Demo Data</button>
+                </div>
+                <div class="demo-card">
+                    <h3>Test Credential Capture</h3>
+                    <p>Simulate credential capture and show evidence</p>
+                    <br>
+                    <button class="demo-btn phishing-btn" onclick="testPhishingCapture()">🎯 Test Phishing Capture</button>
+                    <button class="demo-btn phishing-btn" onclick="showPhishingEvidence()">📊 Show Evidence</button>
+                    <button class="demo-btn phishing-btn" onclick="clearPhishingData()">🗑️ Clear Data</button>
+                </div>
+            </div>
+            <div class="results-area" id="phishingResults">
+                <div class="info">Click buttons above to test phishing attacks...</div>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>🔄 MITM ATTACK DEMONSTRATION</h2>
+            <div class="demo-grid">
+                <div class="demo-card">
+                    <h3>Traffic Interception</h3>
+                    <p>Simulate man-in-the-middle attacks</p>
+                    <br>
+                    <button class="demo-btn mitm-btn" onclick="startMITMProxy()">🌐 Start MITM Proxy</button>
+                    <button class="demo-btn mitm-btn" onclick="interceptTraffic()">📡 Intercept Traffic</button>
+                    <button class="demo-btn mitm-btn" onclick="capture2FACode()">🔐 Capture 2FA Code</button>
+                </div>
+                <div class="demo-card">
+                    <h3>Evidence Collection</h3>
+                    <p>Show intercepted data and 2FA codes</p>
+                    <br>
+                    <button class="demo-btn mitm-btn" onclick="showMITMEvidence()">📊 Show MITM Evidence</button>
+                    <button class="demo-btn mitm-btn" onclick="simulateInterception()">🎭 Simulate Live Interception</button>
+                    <button class="demo-btn mitm-btn" onclick="clearMITMData()">🗑️ Clear Data</button>
+                </div>
+            </div>
+            <div class="results-area" id="mitmResults">
+                <div class="info">Click buttons above to test MITM attacks...</div>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>📱 SIM SWAP ATTACK DEMONSTRATION</h2>
+            <div class="demo-grid">
+                <div class="demo-card">
+                    <h3>Phone Hijacking</h3>
+                    <p>Demonstrate SIM swap social engineering</p>
+                    <br>
+                    <button class="demo-btn simswap-btn" onclick="initiateSIMSwap()">📞 Initiate SIM Swap</button>
+                    <button class="demo-btn simswap-btn" onclick="executeSIMTransfer()">🔄 Execute Transfer</button>
+                    <button class="demo-btn simswap-btn" onclick="showPhoneHijacking()">📱 Show Hijacking</button>
+                </div>
+                <div class="demo-card">
+                    <h3>Phone Control Evidence</h3>
+                    <p>Show complete phone number takeover</p>
+                    <br>
+                    <button class="demo-btn simswap-btn" onclick="showSIMSwapEvidence()">📊 Show SIM Evidence</button>
+                    <button class="demo-btn simswap-btn" onclick="demonstratePhoneControl()">📱 Demo Phone Control</button>
+                    <button class="demo-btn simswap-btn" onclick="clearSIMSwapData()">🗑️ Clear Data</button>
+                </div>
+            </div>
+            <div class="results-area" id="simswapResults">
+                <div class="info">Click buttons above to test SIM swap attacks...</div>
+            </div>
+        </div>
+
+        <!-- Complete Evidence Summary -->
+        <div class="demo-section">
+            <h2>📊 COMPLETE EVIDENCE SUMMARY</h2>
+            <div class="demo-card">
+                <h3>All Attack Evidence</h3>
+                <p>Show comprehensive evidence from all attacks</p>
+                <br>
+                <button class="demo-btn" onclick="showAllEvidence()">📊 Show All Evidence</button>
+                <button class="demo-btn" onclick="runCompleteDemo()">🚀 Run Complete Demo</button>
+                <button class="demo-btn" onclick="exportEvidence()">💾 Export Evidence</button>
+                <button class="demo-btn" onclick="resetAllData()">🔄 Reset All Data</button>
+            </div>
+            <div class="results-area" id="summaryResults">
+                <div class="info">Complete attack evidence summary will appear here...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <div class="status-indicator">
+            <div class="dot"></div>
+            <span>Server Status: <span id="serverStatus">Checking...</span></span>
+        </div>
+        <div>
+            <span>🎯 Attacks Ready | 📊 Evidence Capture Active</span>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        
+        // Utility Functions
+        function logResult(containerId, message, type = 'info') {
+            const container = document.getElementById(containerId);
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+            const newLine = document.createElement('div');
+            newLine.className = className;
+            newLine.textContent = `[${timestamp}] ${message}`;
+            container.appendChild(newLine);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function clearResults(containerId) {
+            document.getElementById(containerId).innerHTML = '';
+        }
+
+        // Server Connection Test
+        async function testServerConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/attacks/evidence/phishing`);
+                if (response.ok) {
+                    document.getElementById('serverStatus').textContent = 'Online ✅';
+                    alert('✅ Server is running and responsive!\n\nServer: localhost:5000\nStatus: Connected\nDatabase: Active\nAPI: Working perfectly!');
+                } else {
+                    throw new Error('Server error');
+                }
+            } catch (error) {
+                document.getElementById('serverStatus').textContent = 'Offline ❌';
+                alert('❌ Server connection failed!\n\nPlease ensure your backend server is running:\ncd backend && npm start');
+            }
+        }
+
+        // Phishing Attack Functions
+        function openFakeBankSite() {
+            logResult('phishingResults', '🏦 Opening fake banking website...', 'info');
+            window.open('live-phishing-bank.html', '_blank');
+            logResult('phishingResults', '✅ Fake bank site opened in new tab', 'success');
+            logResult('phishingResults', '💡 Enter any credentials to test capture', 'info');
+        }
+
+        function openFakeGmailSite() {
+            logResult('phishingResults', '📧 Opening fake Gmail website...', 'info');
+            window.open('live-phishing-gmail.html', '_blank');
+            logResult('phishingResults', '✅ Fake Gmail site opened in new tab', 'success');
+            logResult('phishingResults', '💡 Enter any credentials to test capture', 'info');
+        }
+
+        function prefillDemoCredentials() {
+            logResult('phishingResults', '📝 Demo credentials ready for presentation', 'info');
+            logResult('phishingResults', 'Bank: victim@company.com / MySecurePass123!', 'success');
+            logResult('phishingResults', 'Gmail: manager@company.com / ManagerPass2024!', 'success');
+            logResult('phishingResults', '💡 Open sites and credentials will be pre-filled', 'info');
+        }
+
+        async function testPhishingCapture() {
+            clearResults('phishingResults');
+            logResult('phishingResults', '🎯 Testing phishing credential capture...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/attacks/demo/phishing`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'presentation.demo@victim.com',
+                        password: 'PresentationDemo2024!',
+                        source: 'live-presentation-test'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    logResult('phishingResults', '✅ PHISHING ATTACK SUCCESSFUL!', 'success');
+                    logResult('phishingResults', `🎯 Attack ID: ${data.attackId}`, 'success');
+                    logResult('phishingResults', '📧 Captured Email: presentation.demo@victim.com', 'success');
+                    logResult('phishingResults', '🔑 Captured Password: PresentationDemo2024!', 'success');
+                    logResult('phishingResults', `⏰ Timestamp: ${new Date().toLocaleString()}`, 'success');
+                    logResult('phishingResults', '🔥 Evidence captured and ready for presentation!', 'warning');
+                } else {
+                    throw new Error('API Error');
+                }
+            } catch (error) {
+                logResult('phishingResults', '❌ Phishing test failed', 'error');
+                logResult('phishingResults', 'Check server connection and try again', 'error');
+            }
+        }
+
+        async function showPhishingEvidence() {
+            logResult('phishingResults', '📊 Loading phishing evidence...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/attacks/evidence/phishing`);
+                const data = await response.json();
+                
+                logResult('phishingResults', '✅ PHISHING EVIDENCE LOADED', 'success');
+                logResult('phishingResults', `📊 Total captured credentials: ${data.total || 0}`, 'success');
+                
+                if (data.credentials && data.credentials.length > 0) {
+                    data.credentials.slice(0, 3).forEach((cred, index) => {
+                        logResult('phishingResults', '', 'info');
+                        logResult('phishingResults', `📋 Evidence #${index + 1}:`, 'warning');
+                        logResult('phishingResults', `🎯 Attack ID: ${cred.attack_id}`, 'success');
+                        logResult('phishingResults', `📧 Email: ${cred.email}`, 'success');
+                        logResult('phishingResults', `⏰ Captured: ${new Date(cred.captured_at).toLocaleString()}`, 'success');
+                    });
+                } else {
+                    logResult('phishingResults', '📝 No credentials captured yet', 'info');
+                    logResult('phishingResults', '💡 Run phishing test to generate evidence', 'info');
+                }
+            } catch (error) {
+                logResult('phishingResults', '❌ Failed to load evidence', 'error');
+            }
+        }
+
+        function clearPhishingData() {
+            clearResults('phishingResults');
+            logResult('phishingResults', '🗑️ Phishing results cleared', 'info');
+        }
+
+        // MITM Attack Functions
+        async function startMITMProxy() {
+            clearResults('mitmResults');
+            logResult('mitmResults', '🌐 Starting MITM proxy server...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/attacks/demo/mitm`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'start_proxy',
+                        target_url: 'https://demo-banking.com/login',
+                        proxy_port: 8080
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    logResult('mitmResults', '✅ MITM PROXY STARTED!', 'success');
+                    logResult('mitmResults', `🎯 Attack ID: ${data.attackId}`, 'success');
+                    logResult('mitmResults', '🌐 Proxy running on port 8080', 'success');
+                    logResult('mitmResults', '📡 Ready to intercept traffic', 'success');
+                    logResult('mitmResults', '🔥 MITM attack ready for demonstration!', 'warning');
+                } else {
+                    throw new Error('API Error');
+                }
+            } catch (error) {
+                logResult('mitmResults', '❌ MITM proxy start failed', 'error');
+            }
+        }
+
+        async function interceptTraffic() {
+            logResult('mitmResults', '📡 Simulating traffic interception...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/attacks/demo/mitm`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        target_url: 'https://intercepted-banking.com/login',
+                        intercepted_data: 'username=victim&password=SecretPass123&2fa=pending',
+                        method: 'traffic_interception'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    logResult('mitmResults', '✅ TRAFFIC INTERCEPTED!', 'success');
+                    logResult('mitmResults', `🎯 Attack ID: ${data.attackId}`, 'success');
+                    logResult('mitmResults', '🌐 Target: https://intercepted-banking.com/login', 'success');
+                    logResult('mitmResults', '📊 Credentials: username=victim&password=SecretPass123', 'success');
+                    logResult('mitmResults', '🔐 2FA Status: Pending interception', 'warning');
+                } else {
+                    throw new Error('API Error');
+                }
+            } catch (error) {
+                logResult('mitmResults', '❌ Traffic interception failed', 'error');
+            }
+        }
+
+        async function capture2FACode() {
+            const codes = ['123456', '789012', '345678', '901234', '567890', '246810'];
+            const randomCode = codes[Math.floor(Math.random() * codes.length)];
+            
+            logResult('mitmResults', '🔐 Intercepting 2FA authentication...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/attacks/demo/mitm`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        target_url: 'https://secure-banking-app.com/2fa',
+                        twofa_code: randomCode,
+                        method: 'sms_interception'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    logResult('mitmResults', '✅ 2FA CODE CAPTURED!', 'success');
+                    logResult('mitmResults', `🎯 Attack ID: ${data.attackId}`, 'success');
+                    logResult('mitmResults', `🔐 2FA Code: ${randomCode}`, 'success');
+                    logResult('mitmResults', '📱 Method: SMS Interception', 'success');
+                    logResult('mitmResults', '🔥 2FA security completely bypassed!', 'warning');
+                } else {
+                    throw new Error('API Error');
+                }
+            } catch (error) {
+                logResult('mitmResults', '❌ 2FA capture failed', 'error');
+            }
+        }
+
+        async function showMITMEvidence() {
+            logResult('mitmResults', '📊 Loading MITM attack evidence...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/attacks/evidence/mitm`);
+                const data = await response.json();
+                
+                logResult('mitmResults', '✅ MITM EVIDENCE LOADED', 'success');
+                logResult('mitmResults', `📊 Total intercepted attacks: ${data.total || 0}`, 'success');
+                
+                if (data.intercepted && data.intercepted.length > 0) {
+                    data.intercepted.slice(0, 3).forEach((intercept, index) => {
+                        logResult('mitmResults', '', 'info');
+                        logResult('mitmResults', `📋 Interception #${index + 1}:`, 'warning');
+                        logResult('mitmResults', `🎯 Attack ID: ${intercept.attack_id}`, 'success');
+                        logResult('mitmResults', `🔐 2FA Code: ${intercept.twofa_code}`, 'success');
+                        logResult('mitmResults', `🌐 Target: ${intercept.target_url}`, 'success');
+                        logResult('mitmResults', `⏰ Intercepted: ${new Date(intercept.intercepted_at).toLocaleString()}`, 'success');
+                    });
+                } else {
+                    logResult('mitmResults', '📝 No traffic intercepted yet', 'info');
+                    logResult('mitmResults', '💡 Run MITM tests to generate evidence', 'info');
+                }
+            } catch (error) {
+                logResult('mitmResults', '❌ Failed to load MITM evidence', 'error');
+            }
+        }
+
+        function simulateInterception() {
+            logResult('mitmResults', '🎭 Simulating live traffic interception...', 'info');
+            logResult('mitmResults', '📡 Proxy server listening on port 8080', 'success');
+            logResult('mitmResults', '🌐 Target connects through proxy', 'success');
+            logResult('mitmResults', '👤 User enters credentials on real site', 'success');
+            logResult('mitmResults', '🔍 Proxy captures all form data', 'success');
+            logResult('mitmResults', '📱 User receives SMS: "Your code is 847392"', 'success');
+            logResult('mitmResults', '🔐 Proxy intercepts 2FA code: 847392', 'warning');
+            logResult('mitmResults', '✅ Attack successful - full credentials captured!', 'success');
+        }
+
+        function clearMITMData() {
+            clearResults('mitmResults');
+            logResult('mitmResults', '🗑️ MITM results cleared', 'info');
+        }
+
+        // SIM Swap Functions
+        async function initiateSIMSwap() {
+            clearResults('simswapResults');
+            logResult('simswapResults', '📞 Initiating SIM swap attack...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/attacks/demo/simswap`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        targetPhoneNumber: '+1-555-DEMO-123',
+                        carrierInfo: 'Demo Wireless Carrier',
+                        method: 'social_engineering',
+                        attackerDevice: 'Presentation Device'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    logResult('simswapResults', '✅ SIM SWAP INITIATED!', 'success');
+                    logResult('simswapResults', `🎯 Attack ID: ${data.attackId}`, 'success');
+                    logResult('simswapResults', '📞 Target Phone: +1-555-DEMO-123', 'success');
+                    logResult('simswapResults', '📱 Carrier: Demo Wireless Carrier', 'success');
+                    logResult('simswapResults', '🎭 Method: Social Engineering', 'success');
+                    logResult('simswapResults', '⏰ Status: Attack in progress...', 'warning');
+                } else {
+                    throw new Error('API Error');
+                }
+            } catch (error) {
+                logResult('simswapResults', '❌ SIM swap initiation failed', 'error');
+            }
+        }
+
+        function executeSIMTransfer() {
+            const newSIMID = 'DEMO' + Math.random().toString(16).substr(2, 8).toUpperCase();
+            
+            logResult('simswapResults', '🔄 Executing SIM card transfer...', 'info');
+            logResult('simswapResults', '🎭 Calling carrier customer service...', 'info');
+            logResult('simswapResults', '🆔 "I lost my phone and need SIM transfer"', 'info');
+            logResult('simswapResults', '✅ Identity verification bypassed', 'success');
+            logResult('simswapResults', '📱 SIM transfer approved by carrier', 'success');
+            logResult('simswapResults', `🆔 New SIM ID: ${newSIMID}`, 'success');
+            logResult('simswapResults', '📞 Phone number successfully hijacked!', 'warning');
+            logResult('simswapResults', '🔥 SIM SWAP COMPLETED!', 'success');
+        }
+
+        function showPhoneHijacking() {
+            logResult('simswapResults', '📱 Demonstrating phone number takeover...', 'info');
+            logResult('simswapResults', '', 'info');
+            logResult('simswapResults', '🔴 VICTIM PERSPECTIVE:', 'error');
+            logResult('simswapResults', '❌ Phone shows "No Service"', 'error');
+            logResult('simswapResults', '❌ Cannot make or receive calls', 'error');
+            logResult('simswapResults', '❌ SMS messages not received', 'error');
+            logResult('simswapResults', '', 'info');
+            logResult('simswapResults', '✅ ATTACKER PERSPECTIVE:', 'success');
+            logResult('simswapResults', '📱 Phone receives all victim SMS', 'success');
+            logResult('simswapResults', '🔐 2FA codes intercepted automatically', 'success');
+            logResult('simswapResults', '💌 Password reset emails accessible', 'success');
+            logResult('simswapResults', '🏦 Banking notifications received', 'success');
+            logResult('simswapResults', '🔥 COMPLETE PHONE CONTROL ACHIEVED!', 'warning');
+        }
+
+        async function showSIMSwapEvidence() {
+            logResult('simswapResults', '📊 Loading SIM swap evidence...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/attacks/evidence/simswap`);
+                const data = await response.json();
+                
+                logResult('simswapResults', '✅ SIM SWAP EVIDENCE LOADED', 'success');
+                logResult('simswapResults', `📊 Total SIM swaps: ${data.total || 0}`, 'success');
+                
+                if (data.swaps && data.swaps.length > 0) {
+                    data.swaps.slice(0, 3).forEach((swap, index) => {
+                        logResult('simswapResults', '', 'info');
+                        logResult('simswapResults', `📋 SIM Swap #${index + 1}:`, 'warning');
+                        logResult('simswapResults', `🎯 Attack ID: ${swap.attack_id}`, 'success');
+                        logResult('simswapResults', `📞 Target Phone: ${swap.target_phone}`, 'success');
+                        logResult('simswapResults', `🆔 New SIM ID: ${swap.new_sim_id}`, 'success');
+                        logResult('simswapResults', `📱 Carrier: ${swap.carrier}`, 'success');
+                        logResult('simswapResults', `⏰ Executed: ${new Date(swap.executed_at).toLocaleString()}`, 'success');
+                    });
+                } else {
+                    logResult('simswapResults', '📝 No SIM swaps executed yet', 'info');
+                    logResult('simswapResults', '💡 Run SIM swap tests to generate evidence', 'info');
+                }
+            } catch (error) {
+                logResult('simswapResults', '❌ Failed to load SIM swap evidence', 'error');
+            }
+        }
+
+        function demonstratePhoneControl() {
+            logResult('simswapResults', '📱 Demonstrating complete phone control...', 'info');
+            logResult('simswapResults', '💬 SMS from Bank: "Login attempt detected"', 'success');
+            logResult('simswapResults', '🔐 SMS from Bank: "Your code is 582947"', 'success');
+            logResult('simswapResults', '📧 SMS from Gmail: "Reset code: 739461"', 'success');
+            logResult('simswapResults', '💳 SMS from PayPal: "Verification: 194873"', 'success');
+            logResult('simswapResults', '🏠 SMS from Alarm: "Security code: 456298"', 'success');
+            logResult('simswapResults', '🔥 ALL VICTIM SMS NOW CONTROLLED BY ATTACKER!', 'warning');
+        }
+
+        function clearSIMSwapData() {
+            clearResults('simswapResults');
+            logResult('simswapResults', '🗑️ SIM swap results cleared', 'info');
+        }
+
+        // Summary Functions
+        async function showAllEvidence() {
+            clearResults('summaryResults');
+            logResult('summaryResults', '📊 Loading complete attack evidence...', 'info');
+            
+            try {
+                const [phishing, mitm, simswap] = await Promise.all([
+                    fetch(`${API_BASE}/attacks/evidence/phishing`).then(r => r.json()),
+                    fetch(`${API_BASE}/attacks/evidence/mitm`).then(r => r.json()),
+                    fetch(`${API_BASE}/attacks/evidence/simswap`).then(r => r.json())
+                ]);
+                
+                logResult('summaryResults', '🔥 COMPLETE 2FA ATTACK EVIDENCE SUMMARY', 'warning');
+                logResult('summaryResults', '=' .repeat(50), 'info');
+                
+                logResult('summaryResults', '🎣 PHISHING ATTACK RESULTS:', 'success');
+                logResult('summaryResults', `   📊 Total credentials captured: ${phishing.total || 0}`, 'success');
+                if (phishing.credentials && phishing.credentials[0]) {
+                    const latest = phishing.credentials[0];
+                    logResult('summaryResults', `   🎯 Latest Attack ID: ${latest.attack_id}`, 'success');
+                    logResult('summaryResults', `   📧 Latest Email: ${latest.email}`, 'success');
+                }
+                
+                logResult('summaryResults', '', 'info');
+                logResult('summaryResults', '🔄 MITM ATTACK RESULTS:', 'success');
+                logResult('summaryResults', `   📊 Total interceptions: ${mitm.total || 0}`, 'success');
+                if (mitm.intercepted && mitm.intercepted[0]) {
+                    const latest = mitm.intercepted[0];
+                    logResult('summaryResults', `   🎯 Latest Attack ID: ${latest.attack_id}`, 'success');
+                    logResult('summaryResults', `   🔐 Latest 2FA Code: ${latest.twofa_code}`, 'success');
+                }
+                
+                logResult('summaryResults', '', 'info');
+                logResult('summaryResults', '📱 SIM SWAP ATTACK RESULTS:', 'success');
+                logResult('summaryResults', `   📊 Total SIM swaps: ${simswap.total || 0}`, 'success');
+                if (simswap.swaps && simswap.swaps[0]) {
+                    const latest = simswap.swaps[0];
+                    logResult('summaryResults', `   🎯 Latest Attack ID: ${latest.attack_id}`, 'success');
+                    logResult('summaryResults', `   📞 Latest Target: ${latest.target_phone}`, 'success');
+                    logResult('summaryResults', `   🆔 Latest SIM ID: ${latest.new_sim_id}`, 'success');
+                }
+                
+                const totalAttacks = (phishing.total || 0) + (mitm.total || 0) + (simswap.total || 0);
+                logResult('summaryResults', '', 'info');
+                logResult('summaryResults', '🔥 FINAL IMPACT ASSESSMENT:', 'warning');
+                logResult('summaryResults', `   📊 Total Successful Attacks: ${totalAttacks}`, 'success');
+                logResult('summaryResults', '   ✅ Password theft via phishing', 'success');
+                logResult('summaryResults', '   ✅ 2FA codes intercepted via MITM', 'success');
+                logResult('summaryResults', '   ✅ Phone numbers hijacked via SIM swap', 'success');
+                logResult('summaryResults', '   🔥 2FA SECURITY COMPLETELY BYPASSED!', 'error');
+                
+            } catch (error) {
+                logResult('summaryResults', '❌ Failed to load complete evidence', 'error');
+            }
+        }
+
+        async function runCompleteDemo() {
+            clearResults('summaryResults');
+            logResult('summaryResults', '🚀 RUNNING COMPLETE 2FA ATTACK DEMONSTRATION', 'warning');
+            logResult('summaryResults', '=' .repeat(60), 'info');
+            
+            // Phase 1: Phishing
+            logResult('summaryResults', '🎣 PHASE 1: PHISHING ATTACK', 'info');
+            logResult('summaryResults', '   Creating fake banking website...', 'info');
+            logResult('summaryResults', '   ✅ Realistic login page generated', 'success');
+            logResult('summaryResults', '   👤 Victim enters credentials', 'info');
+            logResult('summaryResults', '   ✅ Email and password captured!', 'success');
+            
+            // Execute actual phishing
+            try {
+                const phishingResponse = await fetch(`${API_BASE}/attacks/demo/phishing`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'complete.demo@victim.com',
+                        password: 'CompleteDemoPass123!',
+                        source: 'complete-presentation-demo'
+                    })
+                });
+                const phishingData = await phishingResponse.json();
+                logResult('summaryResults', `   🎯 Phishing Attack ID: ${phishingData.attackId}`, 'success');
+            } catch (e) {
+                logResult('summaryResults', '   ⚠️ Simulated phishing attack', 'warning');
+            }
+            
+            logResult('summaryResults', '', 'info');
+            
+            // Phase 2: MITM
+            logResult('summaryResults', '🔄 PHASE 2: MITM ATTACK', 'info');
+            logResult('summaryResults', '   Starting proxy server...', 'info');
+            logResult('summaryResults', '   ✅ Traffic interception active', 'success');
+            logResult('summaryResults', '   👤 Victim enters 2FA code', 'info');
+            logResult('summaryResults', '   ✅ 2FA code intercepted!', 'success');
+            
+            // Execute actual MITM
+            try {
+                const mitmResponse = await fetch(`${API_BASE}/attacks/demo/mitm`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        target_url: 'https://complete-demo-banking.com',
+                        twofa_code: '987654',
+                        source: 'complete-presentation-demo'
+                    })
+                });
+                const mitmData = await mitmResponse.json();
+                logResult('summaryResults', `   🎯 MITM Attack ID: ${mitmData.attackId}`, 'success');
+            } catch (e) {
+                logResult('summaryResults', '   ⚠️ Simulated MITM attack', 'warning');
+            }
+            
+            logResult('summaryResults', '', 'info');
+            
+            // Phase 3: SIM Swap
+            logResult('summaryResults', '📱 PHASE 3: SIM SWAP ATTACK', 'info');
+            logResult('summaryResults', '   Calling carrier customer service...', 'info');
+            logResult('summaryResults', '   ✅ Social engineering successful', 'success');
+            logResult('summaryResults', '   📞 Phone number transferred', 'info');
+            logResult('summaryResults', '   ✅ Complete phone control gained!', 'success');
+            
+            // Execute actual SIM swap
+            try {
+                const simswapResponse = await fetch(`${API_BASE}/attacks/demo/simswap`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        targetPhoneNumber: '+1-555-COMPLETE-DEMO',
+                        carrierInfo: 'Complete Demo Wireless',
+                        source: 'complete-presentation-demo'
+                    })
+                });
+                const simswapData = await simswapResponse.json();
+                logResult('summaryResults', `   🎯 SIM Swap Attack ID: ${simswapData.attackId}`, 'success');
+            } catch (e) {
+                logResult('summaryResults', '   ⚠️ Simulated SIM swap attack', 'warning');
+            }
+            
+            logResult('summaryResults', '', 'info');
+            logResult('summaryResults', '🔥 COMPLETE DEMO RESULTS:', 'warning');
+            logResult('summaryResults', '   ✅ Passwords stolen via phishing', 'success');
+            logResult('summaryResults', '   ✅ 2FA codes intercepted via MITM', 'success');
+            logResult('summaryResults', '   ✅ Phone numbers hijacked via SIM swap', 'success');
+            logResult('summaryResults', '   🔥 ALL 2FA SECURITY MEASURES DEFEATED!', 'error');
+            logResult('summaryResults', '', 'info');
+            logResult('summaryResults', '🎯 PRESENTATION READY - ALL ATTACKS SUCCESSFUL!', 'warning');
+        }
+
+        function exportEvidence() {
+            logResult('summaryResults', '💾 Exporting attack evidence...', 'info');
+            
+            const evidence = {
+                timestamp: new Date().toISOString(),
+                attacks: {
+                    phishing: 'Credentials captured with real attack IDs',
+                    mitm: '2FA codes intercepted with timestamps',
+                    simswap: 'Phone numbers hijacked with SIM IDs'
+                },
+                presentation_ready: true,
+                evidence_location: 'SQLite database with API endpoints',
+                demo_urls: {
+                    phishing_bank: 'live-phishing-bank.html',
+                    phishing_gmail: 'live-phishing-gmail.html',
+                    controller: 'live-presentation-controller.html'
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(evidence, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'attack-evidence-export.json';
+            a.click();
+            
+            logResult('summaryResults', '✅ Evidence exported successfully!', 'success');
+            logResult('summaryResults', '📄 File: attack-evidence-export.json', 'info');
+        }
+
+        function resetAllData() {
+            logResult('summaryResults', '🔄 Resetting all attack data...', 'info');
+            clearResults('phishingResults');
+            clearResults('mitmResults');
+            clearResults('simswapResults');
+            clearResults('summaryResults');
+            logResult('summaryResults', '✅ All data reset - ready for fresh demonstration', 'success');
+        }
+
+        // Initialize on load
+        window.addEventListener('load', function() {
+            setTimeout(testServerConnection, 1000);
+            logResult('summaryResults', '🚀 2FA Attack Demonstration System Ready', 'success');
+            logResult('summaryResults', '💡 Use buttons above to test individual attacks', 'info');
+            logResult('summaryResults', '🎯 Click "Run Complete Demo" for full presentation', 'info');
+        });
+    </script>
+</body>
+</html>

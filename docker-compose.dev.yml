@@ -1,0 +1,49 @@
+# Development Docker Compose with hot reload
+version: '3.8'
+
+services:
+  backend-dev:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: 2fa-attacks-backend-dev
+    ports:
+      - "5000:5000"
+      - "9229:9229" # Debug port
+    environment:
+      - NODE_ENV=development
+      - PORT=5000
+      - JWT_SECRET=dev-jwt-secret-not-for-production
+      - DATABASE_PATH=/app/data/attacks.db
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./backend/data:/app/data
+    networks:
+      - 2fa-dev-network
+    command: npm run dev
+    restart: unless-stopped
+
+  frontend-dev:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: 2fa-attacks-frontend-dev
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:5000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - 2fa-dev-network
+    depends_on:
+      - backend-dev
+    command: npm run dev -- --host
+    restart: unless-stopped
+
+networks:
+  2fa-dev-network:
+    driver: bridge
+    name: 2fa-attacks-dev-network

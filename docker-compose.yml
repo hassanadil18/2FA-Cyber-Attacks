@@ -1,0 +1,61 @@
+services:
+  # Backend Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: 2fa-attacks-backend
+    ports:
+      - "5000:5000"
+      - "8080:8080"     # MITM Proxy port
+      - "9090:9090"     # Phishing server port
+      - "9091:9091"     # Phishing server port (alternate)
+      - "9092:9092"     # Phishing server port (alternate)
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - JWT_SECRET=your-super-secure-jwt-secret-change-in-production
+      - JWT_EXPIRES_IN=24h
+      - DATABASE_PATH=/app/data/attacks.db
+    volumes:
+      - ./backend/data:/app/data
+      - backend_logs:/app/logs
+    networks:
+      - 2fa-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  # Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: 2fa-attacks-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - 2fa-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+networks:
+  2fa-network:
+    driver: bridge
+    name: 2fa-attacks-network
+
+volumes:
+  backend_logs:
+    name: 2fa-backend-logs
