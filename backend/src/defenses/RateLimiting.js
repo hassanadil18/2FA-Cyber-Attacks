@@ -33,10 +33,10 @@ class RateLimiting {
       const countQuery = `
         SELECT COUNT(*) as count
         FROM login_attempts 
-        WHERE identifier = ? AND action_type = ? AND timestamp > ?
+        WHERE (username = ? OR ip_address = ?) AND attack_type = ? AND datetime(created_at) > datetime('now', '-15 minutes')
       `;
 
-      database.getDB().get(countQuery, [identifier, actionType, windowStart], (err, row) => {
+      database.getDB().get(countQuery, [identifier, identifier, actionType], (err, row) => {
         if (err) {
           reject(err);
           return;
@@ -54,12 +54,12 @@ class RateLimiting {
           
           // Calculate reset time
           const oldestAttemptQuery = `
-            SELECT MIN(timestamp) as oldest
+            SELECT MIN(created_at) as oldest
             FROM login_attempts 
-            WHERE identifier = ? AND action_type = ? AND timestamp > ?
+            WHERE (username = ? OR ip_address = ?) AND attack_type = ? AND datetime(created_at) > datetime('now', '-15 minutes')
           `;
 
-          database.getDB().get(oldestAttemptQuery, [identifier, actionType, windowStart], (err, oldestRow) => {
+          database.getDB().get(oldestAttemptQuery, [identifier, identifier, actionType], (err, oldestRow) => {
             const resetTime = (oldestRow.oldest || now) + limit.window;
             
             resolve({
@@ -90,14 +90,14 @@ class RateLimiting {
   async logAttempt(actionType, identifier, wasBlocked = false) {
     return new Promise((resolve, reject) => {
       const insertQuery = `
-        INSERT INTO login_attempts (timestamp, identifier, action_type, success, ip_address, user_agent)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO login_attempts (username, ip_address, user_agent, success, attack_type)
+        VALUES (?, ?, ?, ?, ?)
       `;
 
       database.getDB().run(insertQuery, [
-        Date.now(),
         identifier,
-        actionType,
+        identifier, // Use identifier as both username and ip for now
+        'rate-limiting-check',
         wasBlocked ? 0 : 1,
         identifier.includes('.') ? identifier : 'unknown', // Basic IP detection
         'rate-limiter'
@@ -618,6 +618,40 @@ class RateLimiting {
           resolve({
             testResult: 'Rate limiting test completed successfully',
             effectiveness: 'high',
+            timestamp: new Date().toISOString()
+          });
+        }
+      });
+    });
+  }
+
+  async getStatus(ipAddress, userId) {
+    return new Promise((resolve, reject) => {
+      const query = `
+        SELECT 
+          attack_type,
+          COUNT(*) as attempts,
+          MAX(created_at) as last_attempt
+        FROM login_attempts 
+        WHERE (ip_address = ? OR username = ?) AND datetime(created_at) > datetime('now', '-15 minutes')
+        GROUP BY attack_type
+      `;
+      
+      database.getDB().all(query, [ipAddress || 'unknown', userId || 'unknown', windowStart], (err, rows) => {
+        if (err) {
+          resolve({ enabled: true, activeLimits: [] }); // Return default on error
+        } else {
+          const activeLimits = rows.map(row => ({
+            actionType: row.action_type,
+            attempts: row.attempts,
+            maxAttempts: this.defaultLimits[row.action_type]?.maxAttempts || 5,
+            lastAttempt: new Date(row.last_attempt).toISOString(),
+            isLimited: row.attempts >= (this.defaultLimits[row.action_type]?.maxAttempts || 5)
+          }));
+          
+          resolve({
+            enabled: true,
+            activeLimits,
             timestamp: new Date().toISOString()
           });
         }
