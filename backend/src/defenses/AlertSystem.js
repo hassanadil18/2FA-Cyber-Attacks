@@ -24,15 +24,20 @@ class AlertSystem {
   }
 
   setupEmailTransporter() {
-    this.emailTransporter = nodemailer.createTransporter({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      auth: {
-        user: process.env.EMAIL_USER || 'demo@2fa-lab.com',
-        pass: process.env.EMAIL_PASS || 'demo-password'
-      }
-    });
+    try {
+      this.emailTransporter = nodemailer.createTransporter({
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        auth: {
+          user: process.env.EMAIL_USER || 'demo@2fa-lab.com',
+          pass: process.env.EMAIL_PASS || 'demo-password'
+        }
+      });
+    } catch (error) {
+      console.log('⚠️  Email transporter setup failed (non-critical):', error.message);
+      this.emailTransporter = null;
+    }
   }
 
   async triggerAlert(alertType, userId, details, severity = 'medium') {

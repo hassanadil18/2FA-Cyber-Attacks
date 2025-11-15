@@ -72,11 +72,13 @@ class Database {
       `CREATE TABLE IF NOT EXISTS login_attempts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT,
+        identifier TEXT,
         ip_address TEXT,
         user_agent TEXT,
         success BOOLEAN NOT NULL,
         failure_reason TEXT,
         attack_type TEXT, -- null for normal attempts
+        timestamp INTEGER,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`,
 
@@ -87,7 +89,11 @@ class Database {
         target_user_id INTEGER,
         attacker_ip TEXT,
         attack_data TEXT, -- JSON data about the attack
+        attack_details TEXT, -- Human-readable attack details
         status TEXT NOT NULL, -- 'initiated', 'in_progress', 'successful', 'failed', 'detected'
+        success BOOLEAN DEFAULT 0,
+        defense_triggered BOOLEAN DEFAULT 0,
+        timestamp INTEGER,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (target_user_id) REFERENCES users (id)
@@ -126,9 +132,13 @@ class Database {
         event_type TEXT NOT NULL,
         severity TEXT NOT NULL, -- 'low', 'medium', 'high', 'critical'
         user_id INTEGER,
+        identifier TEXT,
         description TEXT NOT NULL,
-        metadata TEXT, -- JSON additional data
+        details TEXT, -- JSON additional data
+        metadata TEXT, -- JSON additional data (alternate name)
+        timestamp INTEGER,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        expires_at DATETIME,
         FOREIGN KEY (user_id) REFERENCES users (id)
       )`
     ];

@@ -216,7 +216,8 @@ router.get('/status', authMiddleware, async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch defense status' });
+    console.error('Defense status error:', error);
+    res.status(500).json({ error: 'Failed to fetch defense status', details: error.message });
   }
 });
 

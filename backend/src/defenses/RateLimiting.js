@@ -637,7 +637,7 @@ class RateLimiting {
         GROUP BY attack_type
       `;
       
-      database.getDB().all(query, [ipAddress || 'unknown', userId || 'unknown', windowStart], (err, rows) => {
+      database.getDB().all(query, [ipAddress || 'unknown', userId || 'unknown'], (err, rows) => {
         if (err) {
           resolve({ enabled: true, activeLimits: [] }); // Return default on error
         } else {
