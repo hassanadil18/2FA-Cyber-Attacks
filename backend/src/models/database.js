@@ -107,13 +107,14 @@ class Database {
 
       // Devices table for device binding
       `CREATE TABLE IF NOT EXISTS trusted_devices (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id TEXT PRIMARY KEY,
         user_id INTEGER NOT NULL,
         device_fingerprint TEXT NOT NULL,
         device_name TEXT,
         browser_info TEXT,
         ip_address TEXT,
         is_trusted BOOLEAN DEFAULT 0,
+        trust_level INTEGER DEFAULT 1,
         last_used DATETIME DEFAULT CURRENT_TIMESTAMP,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users (id)

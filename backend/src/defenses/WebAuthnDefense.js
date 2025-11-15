@@ -438,6 +438,55 @@ class WebAuthnDefense {
       });
     });
   }
+
+  async getWebAuthnStatistics() {
+    return this.getRegistrationStatistics();
+  }
+
+  async createCredentialOptions(userId, username, email) {
+    const challenge = await this.generateChallenge();
+    return {
+      ...challenge,
+      user: {
+        id: Buffer.from(userId.toString()).toString('base64url'),
+        name: username || email,
+        displayName: username || email
+      }
+    };
+  }
+
+  async getAssertionOptions(userId) {
+    const challenge = crypto.randomBytes(32).toString('base64url');
+    const devices = await this.getUserDevices(userId);
+    
+    return {
+      challenge,
+      allowCredentials: devices.map(device => ({
+        type: 'public-key',
+        id: device.credential_id
+      })),
+      userVerification: 'required',
+      timeout: 60000
+    };
+  }
+
+  async revokeDevice(userId, deviceId) {
+    return new Promise((resolve, reject) => {
+      const query = `DELETE FROM trusted_devices WHERE id = ? AND user_id = ? AND ip_address = 'webauthn-device'`;
+      
+      database.getDB().run(query, [deviceId, userId], function(err) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({
+            message: 'WebAuthn device revoked successfully',
+            deviceId,
+            rowsDeleted: this.changes
+          });
+        }
+      });
+    });
+  }
 }
 
 module.exports = WebAuthnDefense;

@@ -624,6 +624,19 @@ class RateLimiting {
       });
     });
   }
+
+  async getCurrentConfiguration() {
+    return {
+      defaultLimits: this.defaultLimits,
+      lockoutDurations: this.lockoutDurations,
+      enabled: true,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  async getActiveRateLimits() {
+    return this.getActiveLimits();
+  }
 }
 
 module.exports = RateLimiting;

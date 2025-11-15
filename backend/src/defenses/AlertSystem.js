@@ -774,6 +774,39 @@ ${JSON.stringify(alertData.details, null, 2)}
       });
     });
   }
+
+  async getCurrentConfiguration() {
+    return {
+      alertThresholds: this.alertThresholds,
+      alertTypes: this.alertTypes,
+      enabled: true,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  async acknowledgeAlert(alertId, userId) {
+    return new Promise((resolve, reject) => {
+      // Update alert as acknowledged
+      const query = `
+        UPDATE security_events 
+        SET details = json_set(details, '$.acknowledged', 'true', '$.acknowledged_by', ?, '$.acknowledged_at', ?)
+        WHERE id = ? OR json_extract(details, '$.id') = ?
+      `;
+      
+      database.getDB().run(query, [userId, new Date().toISOString(), alertId, alertId], function(err) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({
+            success: true,
+            alertId,
+            acknowledgedBy: userId,
+            timestamp: new Date().toISOString()
+          });
+        }
+      });
+    });
+  }
 }
 
 module.exports = AlertSystem;

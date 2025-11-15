@@ -595,6 +595,71 @@ class DeviceBinding {
       });
     });
   }
+
+  async trustDevice(userId, deviceData) {
+    // Wrapper method for frontend compatibility
+    return this.registerDevice(userId, deviceData, deviceData.ipAddress);
+  }
+
+  async getDeviceSecurityStatus(userId) {
+    return new Promise((resolve, reject) => {
+      const query = `
+        SELECT 
+          COUNT(*) as total_devices,
+          SUM(CASE WHEN is_trusted = 1 THEN 1 ELSE 0 END) as trusted_devices,
+          MAX(trust_level) as max_trust_level,
+          COUNT(CASE WHEN last_used > datetime('now', '-7 days') THEN 1 END) as active_devices
+        FROM trusted_devices
+        WHERE user_id = ? AND ip_address != 'webauthn-device'
+      `;
+
+      database.getDB().get(query, [userId], (err, row) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({
+            total_devices: row.total_devices || 0,
+            trusted_devices: row.trusted_devices || 0,
+            max_trust_level: row.max_trust_level || 0,
+            active_devices: row.active_devices || 0,
+            security_score: Math.round(((row.trusted_devices || 0) / Math.max(row.total_devices || 1, 1)) * 100)
+          });
+        }
+      });
+    });
+  }
+
+  async revokeDevice(userId, deviceId) {
+    return new Promise((resolve, reject) => {
+      const query = `DELETE FROM trusted_devices WHERE id = ? AND user_id = ?`;
+      
+      database.getDB().run(query, [deviceId, userId], function(err) {
+        if (err) {
+          reject(err);
+        } else {
+          // Log defense event
+          const defenseLogQuery = `
+            INSERT INTO defense_logs (defense_type, user_id, triggered_by, action_taken, effectiveness)
+            VALUES (?, ?, ?, ?, ?)
+          `;
+          
+          database.getDB().run(defenseLogQuery, [
+            'device_revocation',
+            userId,
+            'user_action',
+            `Device ${deviceId} revoked`,
+            'device_removed'
+          ], () => {
+            resolve({
+              message: 'Device revoked successfully',
+              deviceId,
+              rowsDeleted: this.changes
+            });
+          });
+        }
+      });
+    });
+  }
 }
 
 module.exports = DeviceBinding;
