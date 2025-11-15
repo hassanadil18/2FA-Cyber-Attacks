@@ -14,7 +14,7 @@ class MITMAttack {
   async initiate(options) {
     const { targetIp, method, interface: netInterface, sslStrip, attackerId } = options;
     const attackId = crypto.randomUUID();
-    const proxyPort = 8080;
+    const proxyPort = await this.findAvailablePort(8080);
     
     const attackData = {
       target_ip: targetIp || '192.168.1.100',
@@ -473,6 +473,44 @@ class MITMAttack {
           });
         }
       });
+    });
+  }
+
+  async findAvailablePort(startPort) {
+    const net = require('net');
+    
+    for (let port = startPort; port < startPort + 100; port++) {
+      try {
+        await this.checkPortAvailable(port);
+        console.log(`🔍 [MITM] Found available port: ${port}`);
+        return port;
+      } catch (err) {
+        // Port is in use, try next one
+        continue;
+      }
+    }
+    
+    // If we can't find an available port, use a random high port
+    const randomPort = Math.floor(Math.random() * 1000) + 8000;
+    console.log(`🔍 [MITM] Using random port: ${randomPort}`);
+    return randomPort;
+  }
+
+  checkPortAvailable(port) {
+    return new Promise((resolve, reject) => {
+      const server = require('net').createServer();
+      
+      server.listen(port, (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          server.close(() => {
+            resolve(port);
+          });
+        }
+      });
+      
+      server.on('error', reject);
     });
   }
 }
