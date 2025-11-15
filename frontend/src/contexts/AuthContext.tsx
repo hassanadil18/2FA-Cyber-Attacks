@@ -58,7 +58,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (username: string, password: string, twofa_code?: string) => {
     try {
+      console.log('Attempting login for username:', username);
       const response = await authAPI.login({ username, password, twofa_code });
+      console.log('Login response:', response);
       
       if (response.requires_2fa) {
         return { success: false, requires_2fa: true };
@@ -69,14 +71,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         authAPI.setToken(response.token);
         setToken(response.token);
         setUser(response.user);
+        console.log('Login successful, user set:', response.user);
         return { success: true };
       }
 
       return { success: false, error: 'Login failed' };
     } catch (error: any) {
+      console.error('Login error:', error);
       return { 
         success: false, 
-        error: error.response?.data?.error || 'Login failed' 
+        error: error.response?.data?.error || error.message || 'Login failed' 
       };
     }
   };

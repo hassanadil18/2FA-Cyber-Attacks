@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
 
 class APIService {
   private api: AxiosInstance;
@@ -64,7 +64,10 @@ class APIService {
 
   // Authentication endpoints
   async login(data: { username: string; password: string; twofa_code?: string }) {
+    console.log('API: Making login request to', `${this.api.defaults.baseURL}/auth/login`);
+    console.log('API: Login data:', { username: data.username, password: '***', twofa_code: data.twofa_code });
     const response = await this.api.post('/auth/login', data);
+    console.log('API: Login response status:', response.status);
     return response.data;
   }
 
