@@ -4,10 +4,25 @@ import { useAuth } from '../contexts/AuthContext';
 import { authAPI } from '../services/api';
 
 interface DefenseStatus {
-  webauthn: boolean;
-  deviceBinding: boolean;
-  rateLimiting: boolean;
-  alertSystem: boolean;
+  webauthn: {
+    enabled: boolean;
+    device_count: number;
+    devices: any[];
+  };
+  device_binding: {
+    enabled: boolean;
+    trusted_devices: number;
+    current_device_trusted: boolean;
+  };
+  rate_limiting: {
+    enabled: boolean;
+    activeLimits: any[];
+    timestamp: string;
+  };
+  alerts: {
+    recent_count: number;
+    latest_alerts: any[];
+  };
 }
 
 interface DefenseLog {
@@ -22,10 +37,25 @@ interface DefenseLog {
 const DefenseCenter: React.FC = () => {
   const { user } = useAuth();
   const [defenseStatus, setDefenseStatus] = useState<DefenseStatus>({
-    webauthn: false,
-    deviceBinding: false,
-    rateLimiting: true,
-    alertSystem: true
+    webauthn: {
+      enabled: false,
+      device_count: 0,
+      devices: []
+    },
+    device_binding: {
+      enabled: false,
+      trusted_devices: 0,
+      current_device_trusted: false
+    },
+    rate_limiting: {
+      enabled: true,
+      activeLimits: [],
+      timestamp: ''
+    },
+    alerts: {
+      recent_count: 0,
+      latest_alerts: []
+    }
   });
   const [defenseLogs, setDefenseLogs] = useState<DefenseLog[]>([]);
   const [loading, setLoading] = useState(false);
@@ -71,10 +101,25 @@ const DefenseCenter: React.FC = () => {
       console.error('❌ Failed to fetch defense status:', error);
       // Set default status if fetch fails
       setDefenseStatus({
-        webauthn: false,
-        deviceBinding: false,
-        rateLimiting: true,
-        alertSystem: true
+        webauthn: {
+          enabled: false,
+          device_count: 0,
+          devices: []
+        },
+        device_binding: {
+          enabled: false,
+          trusted_devices: 0,
+          current_device_trusted: false
+        },
+        rate_limiting: {
+          enabled: true,
+          activeLimits: [],
+          timestamp: ''
+        },
+        alerts: {
+          recent_count: 0,
+          latest_alerts: []
+        }
       });
     }
   };
@@ -140,7 +185,10 @@ const DefenseCenter: React.FC = () => {
       
       alert(`WebAuthn device "${simulatedCredential.deviceName}" registered successfully!`);
       fetchWebAuthnDevices();
-      setDefenseStatus(prev => ({ ...prev, webauthn: true }));
+      setDefenseStatus(prev => ({ 
+        ...prev, 
+        webauthn: { ...prev.webauthn, enabled: true, device_count: prev.webauthn.device_count + 1 } 
+      }));
     } catch (error: any) {
       console.error('WebAuthn registration failed:', error);
       const errorMessage = error.response?.data?.error || 'Failed to register WebAuthn device';
@@ -172,7 +220,10 @@ const DefenseCenter: React.FC = () => {
 
       alert(`Device "${response.data.deviceName || currentDevice}" bound successfully!`);
       fetchTrustedDevices();
-      setDefenseStatus(prev => ({ ...prev, deviceBinding: true }));
+      setDefenseStatus(prev => ({ 
+        ...prev, 
+        device_binding: { ...prev.device_binding, enabled: true, trusted_devices: prev.device_binding.trusted_devices + 1 } 
+      }));
       setCurrentDevice('');
     } catch (error: any) {
       console.error('Device binding failed:', error);
@@ -191,7 +242,10 @@ const DefenseCenter: React.FC = () => {
       const response = await authAPI.post('/defenses/rate-limiting/config', rateLimitConfig);
       
       alert(`Rate limiting updated: ${rateLimitConfig.maxAttempts} attempts per ${rateLimitConfig.windowMinutes} minutes`);
-      setDefenseStatus(prev => ({ ...prev, rateLimiting: rateLimitConfig.enabled }));
+      setDefenseStatus(prev => ({ 
+        ...prev, 
+        rate_limiting: { ...prev.rate_limiting, enabled: rateLimitConfig.enabled } 
+      }));
     } catch (error: any) {
       console.error('Failed to update rate limiting:', error);
       const errorMessage = error.response?.data?.error || 'Configuration update failed';
@@ -213,7 +267,8 @@ const DefenseCenter: React.FC = () => {
       if (alertConfig.smsAlerts) alertTypes.push('SMS');
       
       alert(`Alert system updated: ${alertTypes.join(' & ')} alerts with threshold ${alertConfig.threshold}`);
-      setDefenseStatus(prev => ({ ...prev, alertSystem: alertConfig.enabled }));
+      // Alert system is always enabled, just showing recent count
+      fetchDefenseStatus();
     } catch (error: any) {
       console.error('Failed to update alert system:', error);
       const errorMessage = error.response?.data?.error || 'Configuration update failed';
@@ -259,8 +314,8 @@ const DefenseCenter: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-900">WebAuthn</h3>
             <p className="text-sm text-gray-600">Hardware Security</p>
           </div>
-          <div className={`p-2 rounded-full ${defenseStatus.webauthn ? 'bg-green-100' : 'bg-red-100'}`}>
-            {defenseStatus.webauthn ? (
+          <div className={`p-2 rounded-full ${defenseStatus.webauthn.enabled ? 'bg-green-100' : 'bg-red-100'}`}>
+            {defenseStatus.webauthn.enabled ? (
               <CheckCircle className="h-6 w-6 text-green-600" />
             ) : (
               <XCircle className="h-6 w-6 text-red-600" />
@@ -269,9 +324,9 @@ const DefenseCenter: React.FC = () => {
         </div>
         <div className="mt-4">
           <span className={`px-2 py-1 text-xs rounded-full ${
-            defenseStatus.webauthn ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            defenseStatus.webauthn.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
           }`}>
-            {defenseStatus.webauthn ? 'Active' : 'Inactive'}
+            {defenseStatus.webauthn.device_count} Devices
           </span>
         </div>
       </div>
@@ -282,8 +337,8 @@ const DefenseCenter: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-900">Device Binding</h3>
             <p className="text-sm text-gray-600">Trusted Devices</p>
           </div>
-          <div className={`p-2 rounded-full ${defenseStatus.deviceBinding ? 'bg-green-100' : 'bg-red-100'}`}>
-            {defenseStatus.deviceBinding ? (
+          <div className={`p-2 rounded-full ${defenseStatus.device_binding.enabled ? 'bg-green-100' : 'bg-red-100'}`}>
+            {defenseStatus.device_binding.enabled ? (
               <CheckCircle className="h-6 w-6 text-green-600" />
             ) : (
               <XCircle className="h-6 w-6 text-red-600" />
@@ -292,9 +347,9 @@ const DefenseCenter: React.FC = () => {
         </div>
         <div className="mt-4">
           <span className={`px-2 py-1 text-xs rounded-full ${
-            defenseStatus.deviceBinding ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            defenseStatus.device_binding.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
           }`}>
-            {trustedDevices.length} Devices
+            {defenseStatus.device_binding.trusted_devices} Devices
           </span>
         </div>
       </div>
@@ -305,8 +360,8 @@ const DefenseCenter: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-900">Rate Limiting</h3>
             <p className="text-sm text-gray-600">Brute Force Protection</p>
           </div>
-          <div className={`p-2 rounded-full ${defenseStatus.rateLimiting ? 'bg-green-100' : 'bg-red-100'}`}>
-            {defenseStatus.rateLimiting ? (
+          <div className={`p-2 rounded-full ${defenseStatus.rate_limiting.enabled ? 'bg-green-100' : 'bg-red-100'}`}>
+            {defenseStatus.rate_limiting.enabled ? (
               <CheckCircle className="h-6 w-6 text-green-600" />
             ) : (
               <XCircle className="h-6 w-6 text-red-600" />
@@ -315,9 +370,9 @@ const DefenseCenter: React.FC = () => {
         </div>
         <div className="mt-4">
           <span className={`px-2 py-1 text-xs rounded-full ${
-            defenseStatus.rateLimiting ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            defenseStatus.rate_limiting.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
           }`}>
-            {rateLimitConfig.maxAttempts} Max Attempts
+            {defenseStatus.rate_limiting.activeLimits.length} Active Limits
           </span>
         </div>
       </div>
@@ -328,8 +383,8 @@ const DefenseCenter: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-900">Alert System</h3>
             <p className="text-sm text-gray-600">Threat Monitoring</p>
           </div>
-          <div className={`p-2 rounded-full ${defenseStatus.alertSystem ? 'bg-green-100' : 'bg-red-100'}`}>
-            {defenseStatus.alertSystem ? (
+          <div className={`p-2 rounded-full ${defenseStatus.alerts.recent_count >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
+            {defenseStatus.alerts.recent_count >= 0 ? (
               <CheckCircle className="h-6 w-6 text-green-600" />
             ) : (
               <XCircle className="h-6 w-6 text-red-600" />
@@ -338,9 +393,9 @@ const DefenseCenter: React.FC = () => {
         </div>
         <div className="mt-4">
           <span className={`px-2 py-1 text-xs rounded-full ${
-            defenseStatus.alertSystem ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            defenseStatus.alerts.recent_count >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
           }`}>
-            Threshold: {alertConfig.threshold}
+            {defenseStatus.alerts.recent_count} Recent Alerts
           </span>
         </div>
       </div>
