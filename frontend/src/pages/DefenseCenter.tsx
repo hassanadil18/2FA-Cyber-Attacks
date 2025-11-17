@@ -184,11 +184,10 @@ const DefenseCenter: React.FC = () => {
       const response = await authAPI.post('/defenses/webauthn/register', simulatedCredential);
       
       alert(`WebAuthn device "${simulatedCredential.deviceName}" registered successfully!`);
-      fetchWebAuthnDevices();
-      setDefenseStatus(prev => ({ 
-        ...prev, 
-        webauthn: { ...prev.webauthn, enabled: true, device_count: prev.webauthn.device_count + 1 } 
-      }));
+      await Promise.all([
+        fetchWebAuthnDevices(),
+        fetchDefenseStatus()
+      ]);
     } catch (error: any) {
       console.error('WebAuthn registration failed:', error);
       const errorMessage = error.response?.data?.error || 'Failed to register WebAuthn device';
@@ -219,11 +218,10 @@ const DefenseCenter: React.FC = () => {
       });
 
       alert(`Device "${response.data.deviceName || currentDevice}" bound successfully!`);
-      fetchTrustedDevices();
-      setDefenseStatus(prev => ({ 
-        ...prev, 
-        device_binding: { ...prev.device_binding, enabled: true, trusted_devices: prev.device_binding.trusted_devices + 1 } 
-      }));
+      await Promise.all([
+        fetchTrustedDevices(),
+        fetchDefenseStatus()
+      ]);
       setCurrentDevice('');
     } catch (error: any) {
       console.error('Device binding failed:', error);
@@ -242,10 +240,7 @@ const DefenseCenter: React.FC = () => {
       const response = await authAPI.post('/defenses/rate-limiting/config', rateLimitConfig);
       
       alert(`Rate limiting updated: ${rateLimitConfig.maxAttempts} attempts per ${rateLimitConfig.windowMinutes} minutes`);
-      setDefenseStatus(prev => ({ 
-        ...prev, 
-        rate_limiting: { ...prev.rate_limiting, enabled: rateLimitConfig.enabled } 
-      }));
+      await fetchDefenseStatus();
     } catch (error: any) {
       console.error('Failed to update rate limiting:', error);
       const errorMessage = error.response?.data?.error || 'Configuration update failed';
@@ -306,7 +301,11 @@ const DefenseCenter: React.FC = () => {
     }
   };
 
-  const renderOverview = () => (
+  const renderOverview = () => {
+    // Safe access with optional chaining
+    if (!defenseStatus) return <div>Loading defense status...</div>;
+    
+    return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <div className="bg-white p-6 rounded-lg shadow">
         <div className="flex items-center justify-between">
@@ -314,8 +313,8 @@ const DefenseCenter: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-900">WebAuthn</h3>
             <p className="text-sm text-gray-600">Hardware Security</p>
           </div>
-          <div className={`p-2 rounded-full ${defenseStatus.webauthn.enabled ? 'bg-green-100' : 'bg-red-100'}`}>
-            {defenseStatus.webauthn.enabled ? (
+          <div className={`p-2 rounded-full ${defenseStatus?.webauthn?.enabled ? 'bg-green-100' : 'bg-red-100'}`}>
+            {defenseStatus?.webauthn?.enabled ? (
               <CheckCircle className="h-6 w-6 text-green-600" />
             ) : (
               <XCircle className="h-6 w-6 text-red-600" />
@@ -324,9 +323,9 @@ const DefenseCenter: React.FC = () => {
         </div>
         <div className="mt-4">
           <span className={`px-2 py-1 text-xs rounded-full ${
-            defenseStatus.webauthn.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            defenseStatus?.webauthn?.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
           }`}>
-            {defenseStatus.webauthn.device_count} Devices
+            {defenseStatus?.webauthn?.device_count || 0} Devices
           </span>
         </div>
       </div>
@@ -337,8 +336,8 @@ const DefenseCenter: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-900">Device Binding</h3>
             <p className="text-sm text-gray-600">Trusted Devices</p>
           </div>
-          <div className={`p-2 rounded-full ${defenseStatus.device_binding.enabled ? 'bg-green-100' : 'bg-red-100'}`}>
-            {defenseStatus.device_binding.enabled ? (
+          <div className={`p-2 rounded-full ${defenseStatus?.device_binding?.enabled ? 'bg-green-100' : 'bg-red-100'}`}>
+            {defenseStatus?.device_binding?.enabled ? (
               <CheckCircle className="h-6 w-6 text-green-600" />
             ) : (
               <XCircle className="h-6 w-6 text-red-600" />
@@ -347,9 +346,9 @@ const DefenseCenter: React.FC = () => {
         </div>
         <div className="mt-4">
           <span className={`px-2 py-1 text-xs rounded-full ${
-            defenseStatus.device_binding.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            defenseStatus?.device_binding?.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
           }`}>
-            {defenseStatus.device_binding.trusted_devices} Devices
+            {defenseStatus?.device_binding?.trusted_devices || 0} Devices
           </span>
         </div>
       </div>
@@ -360,8 +359,8 @@ const DefenseCenter: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-900">Rate Limiting</h3>
             <p className="text-sm text-gray-600">Brute Force Protection</p>
           </div>
-          <div className={`p-2 rounded-full ${defenseStatus.rate_limiting.enabled ? 'bg-green-100' : 'bg-red-100'}`}>
-            {defenseStatus.rate_limiting.enabled ? (
+          <div className={`p-2 rounded-full ${defenseStatus?.rate_limiting?.enabled ? 'bg-green-100' : 'bg-red-100'}`}>
+            {defenseStatus?.rate_limiting?.enabled ? (
               <CheckCircle className="h-6 w-6 text-green-600" />
             ) : (
               <XCircle className="h-6 w-6 text-red-600" />
@@ -370,9 +369,9 @@ const DefenseCenter: React.FC = () => {
         </div>
         <div className="mt-4">
           <span className={`px-2 py-1 text-xs rounded-full ${
-            defenseStatus.rate_limiting.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            defenseStatus?.rate_limiting?.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
           }`}>
-            {defenseStatus.rate_limiting.activeLimits.length} Active Limits
+            {defenseStatus?.rate_limiting?.activeLimits?.length || 0} Active Limits
           </span>
         </div>
       </div>
@@ -383,8 +382,8 @@ const DefenseCenter: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-900">Alert System</h3>
             <p className="text-sm text-gray-600">Threat Monitoring</p>
           </div>
-          <div className={`p-2 rounded-full ${defenseStatus.alerts.recent_count >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
-            {defenseStatus.alerts.recent_count >= 0 ? (
+          <div className={`p-2 rounded-full ${(defenseStatus?.alerts?.recent_count !== undefined && defenseStatus?.alerts?.recent_count >= 0) ? 'bg-green-100' : 'bg-red-100'}`}>
+            {(defenseStatus?.alerts?.recent_count !== undefined && defenseStatus?.alerts?.recent_count >= 0) ? (
               <CheckCircle className="h-6 w-6 text-green-600" />
             ) : (
               <XCircle className="h-6 w-6 text-red-600" />
@@ -393,16 +392,17 @@ const DefenseCenter: React.FC = () => {
         </div>
         <div className="mt-4">
           <span className={`px-2 py-1 text-xs rounded-full ${
-            defenseStatus.alerts.recent_count >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            (defenseStatus?.alerts?.recent_count !== undefined && defenseStatus?.alerts?.recent_count >= 0) ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
           }`}>
-            {defenseStatus.alerts.recent_count} Recent Alerts
+            {defenseStatus?.alerts?.recent_count || 0} Recent Alerts
           </span>
         </div>
       </div>
     </div>
   );
+};
 
-  const renderWebAuthn = () => (
+const renderWebAuthn = () => (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-semibold text-gray-900">WebAuthn Security Keys</h3>
@@ -423,10 +423,10 @@ const DefenseCenter: React.FC = () => {
           <p className="text-gray-600">No WebAuthn devices registered.</p>
         ) : (
           webauthnDevices.map((device, index) => (
-            <div key={index} className="border rounded-lg p-4">
+            <div key={device.id || index} className="border rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium text-gray-900">{device.deviceName || `Device ${index + 1}`}</h4>
+                  <h4 className="font-medium text-gray-900">{device.name || device.device_name || `Device ${index + 1}`}</h4>
                   <p className="text-sm text-gray-600">Registered: {new Date(device.created_at).toLocaleDateString()}</p>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -473,10 +473,10 @@ const DefenseCenter: React.FC = () => {
           <p className="text-gray-600">No trusted devices configured.</p>
         ) : (
           trustedDevices.map((device, index) => (
-            <div key={index} className="border rounded-lg p-4">
+            <div key={device.id || index} className="border rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium text-gray-900">{device.device_name}</h4>
+                  <h4 className="font-medium text-gray-900">{device.device_name || device.name || `Device ${index + 1}`}</h4>
                   <p className="text-sm text-gray-600">Platform: {device.platform}</p>
                   <p className="text-sm text-gray-600">Last seen: {new Date(device.last_seen).toLocaleDateString()}</p>
                 </div>

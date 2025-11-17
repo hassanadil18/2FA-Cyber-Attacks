@@ -49,8 +49,8 @@ class DeviceBinding {
     return Math.min(strength, 100);
   }
 
-  async registerDevice(userId, deviceInfo, ipAddress) {
-    const deviceFingerprint = await this.generateDeviceFingerprint(deviceInfo);
+  async trustDevice(userId, deviceData) {
+    const { fingerprint, userAgent, ipAddress, deviceName, platform, language, screenResolution } = deviceData;
     const deviceId = crypto.randomUUID();
     
     return new Promise((resolve, reject) => {
@@ -60,47 +60,69 @@ class DeviceBinding {
         WHERE user_id = ? AND device_fingerprint = ?
       `;
 
-      database.getDB().get(checkQuery, [userId, deviceFingerprint.fingerprint], (err, existingDevice) => {
+      database.getDB().get(checkQuery, [userId, fingerprint], (err, existingDevice) => {
         if (err) {
           reject(err);
           return;
         }
 
         if (existingDevice) {
-          resolve({
-            deviceId: existingDevice.id,
-            fingerprint: deviceFingerprint.fingerprint,
-            status: 'already_registered',
-            trustLevel: existingDevice.trust_level || 0
+          // Update existing device
+          const updateQuery = `
+            UPDATE trusted_devices 
+            SET is_trusted = 1, 
+                trust_level = 10,
+                last_used = datetime('now'),
+                device_name = ?
+            WHERE id = ?
+          `;
+          
+          database.getDB().run(updateQuery, [deviceName, existingDevice.id], (err) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve({
+                deviceId: existingDevice.id,
+                trustLevel: 10,
+                deviceName: deviceName
+              });
+            }
           });
           return;
         }
 
         // Register new device
+        const browserInfo = {
+          userAgent,
+          platform,
+          language,
+          screenResolution,
+          timestamp: new Date().toISOString()
+        };
+        
         const insertQuery = `
           INSERT INTO trusted_devices (
             id, user_id, device_fingerprint, device_name, browser_info, 
-            ip_address, is_trusted, trust_level, created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ip_address, is_trusted, trust_level, created_at, last_used
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
-        const deviceName = this.generateDeviceName(deviceFingerprint.components);
-        
         database.getDB().run(insertQuery, [
           deviceId,
           userId,
-          deviceFingerprint.fingerprint,
+          fingerprint,
           deviceName,
-          JSON.stringify(deviceFingerprint.components),
+          JSON.stringify(browserInfo),
           ipAddress,
-          0, // Not trusted initially
-          1,  // Initial trust level
+          1, // Trusted immediately
+          10, // Full trust level
+          new Date().toISOString(),
           new Date().toISOString()
         ], function(err) {
           if (err) {
             reject(err);
           } else {
-            console.log(`📱 [DEVICE BINDING] New device registered for user ${userId}: ${deviceName}`);
+            console.log(`📱 [DEVICE BINDING] Device trusted for user ${userId}: ${deviceName}`);
             
             // Log defense event
             const defenseLogQuery = `
@@ -109,20 +131,16 @@ class DeviceBinding {
             `;
             
             database.getDB().run(defenseLogQuery, [
-              'device_registration',
+              'device_trust',
               userId,
-              'login_attempt',
-              'New device registered and flagged for verification',
-              'device_monitored'
+              'user_action',
+              `Device "${deviceName}" added to trusted devices`,
+              'device_secured'
             ], () => {
               resolve({
                 deviceId,
-                fingerprint: deviceFingerprint.fingerprint,
-                name: deviceName,
-                status: 'registered',
-                trustLevel: 1,
-                strength: deviceFingerprint.strength,
-                requiresVerification: true
+                trustLevel: 10,
+                deviceName: deviceName
               });
             });
           }
@@ -590,39 +608,6 @@ class DeviceBinding {
             testResult: 'Device binding test completed successfully',
             effectiveness: 'medium',
             timestamp: new Date().toISOString()
-          });
-        }
-      });
-    });
-  }
-
-  async trustDevice(userId, deviceData) {
-    // Wrapper method for frontend compatibility
-    return this.registerDevice(userId, deviceData, deviceData.ipAddress);
-  }
-
-  async getDeviceSecurityStatus(userId) {
-    return new Promise((resolve, reject) => {
-      const query = `
-        SELECT 
-          COUNT(*) as total_devices,
-          SUM(CASE WHEN is_trusted = 1 THEN 1 ELSE 0 END) as trusted_devices,
-          MAX(trust_level) as max_trust_level,
-          COUNT(CASE WHEN last_used > datetime('now', '-7 days') THEN 1 END) as active_devices
-        FROM trusted_devices
-        WHERE user_id = ? AND ip_address != 'webauthn-device'
-      `;
-
-      database.getDB().get(query, [userId], (err, row) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve({
-            total_devices: row.total_devices || 0,
-            trusted_devices: row.trusted_devices || 0,
-            max_trust_level: row.max_trust_level || 0,
-            active_devices: row.active_devices || 0,
-            security_score: Math.round(((row.trusted_devices || 0) / Math.max(row.total_devices || 1, 1)) * 100)
           });
         }
       });
