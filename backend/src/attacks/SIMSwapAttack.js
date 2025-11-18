@@ -39,6 +39,12 @@ class SIMSwapAttack {
         if (err) {
           reject(err);
         } else {
+          console.log(`📱 Executing SIM swap attack with params: {
+  phone_number: '${targetPhoneNumber}',
+  carrier: '${carrierInfo}',
+  method: '${method}',
+  device: '${attackerDevice}'
+}`);
           console.log(`📱 [SIM SWAP ATTACK] Initiated against: ${targetPhoneNumber}`);
           console.log(`🏢 Target Carrier: ${carrierInfo}`);
           console.log(`🔧 Attack Method: ${method}`);
@@ -88,13 +94,25 @@ class SIMSwapAttack {
 
   async executeSwap(attackId) {
     return new Promise((resolve, reject) => {
-      // Simulate the SIM swap execution with realistic timing
-      console.log(`📱 [SIM SWAP] Starting execution phase for attack ${attackId}`);
-      
-      // Update to in_progress
-      this.updateAttackPhase(attackId, 'in_progress', 'Contacting carrier support');
-      
-      setTimeout(async () => {
+      // First, get the original attack data to retrieve phone number
+      const getAttackQuery = 'SELECT attack_data FROM attack_logs WHERE id = ?';
+      database.getDB().get(getAttackQuery, [attackId], (err, row) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        const originalAttackData = JSON.parse(row.attack_data);
+        const targetPhone = originalAttackData.target_phone;
+
+        // Simulate the SIM swap execution with realistic timing
+        console.log(`📱 [SIM SWAP] Starting execution phase for attack ${attackId}`);
+        console.log(`📞 Target Phone: ${targetPhone}`);
+        
+        // Update to in_progress
+        this.updateAttackPhase(attackId, 'in_progress', 'Contacting carrier support');
+        
+        setTimeout(async () => {
         const swapData = {
           swap_executed: true,
           new_sim_id: crypto.randomBytes(8).toString('hex').toUpperCase(),
@@ -116,23 +134,52 @@ class SIMSwapAttack {
           }
         };
 
-        console.log(`📱 [SIM SWAP EXECUTED] Attack ID: ${attackId}`);
-        console.log(`🆔 New SIM ID: ${swapData.new_sim_id}`);
-        console.log(`✅ Attacker now controls target phone number`);
+        console.log(`
+📱 [SIM SWAP SUCCESS] Attack ID: ${attackId}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📞 Phone Number: ✅ HIJACKED
+🆔 New SIM ID: ${swapData.new_sim_id}
+🏢 Carrier: ${swapData.carrier_response}
+📱 Control Status: ✅ ATTACKER CONTROLLED
+🔐 SMS Interception: ✅ ACTIVE
+💥 Impact: ALL SMS 2FA COMPROMISED
+⏰ Timestamp: ${swapData.timestamp}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`);
 
-        // Update attack status
+        // Prepare captured credentials data
+        const capturedCreds = {
+          phone_number: targetPhone,
+          new_sim_id: swapData.new_sim_id,
+          carrier: originalAttackData.carrier,
+          intercepted_sms_count: 0,
+          account_takeovers: [],
+          timestamp: swapData.timestamp,
+          capture_method: 'sim_swap'
+        };
+
+        // Update attack status with captured credentials
         const query = `
           UPDATE attack_logs 
           SET status = 'successful',
               success = 1,
+              captured_credentials = ?,
               attack_data = json_patch(attack_data, json('{"swap_execution": ' || json(?) || ', "completed_at": "' || datetime('now') || '"}'))
           WHERE id = ?
         `;
 
-        database.getDB().run(query, [JSON.stringify(swapData), attackId], function(err) {
+        database.getDB().run(query, [
+          JSON.stringify(capturedCreds),
+          JSON.stringify(swapData), 
+          attackId
+        ], function(err) {
           if (err) {
             reject(err);
           } else {
+            console.log(`✅ [SIM SWAP SUCCESS] Attack ${attackId} - phone number captured!`);
+            console.log(`📊 Database updated with SIM swap data`);
+            console.log(`🚨 [CRITICAL] All SMS-based 2FA services now compromised for this number!`);
+            
             // Log high-severity security event
             const securityEventQuery = `
               INSERT INTO security_events (event_type, severity, description, metadata)
@@ -158,7 +205,8 @@ class SIMSwapAttack {
             });
           }
         });
-      }, parseInt(process.env.SIM_SWAP_DELAY) || 5000); // 5 second delay to simulate processing
+        }, parseInt(process.env.SIM_SWAP_DELAY) || 5000); // 5 second delay to simulate processing
+      });
     });
   }
 
@@ -173,8 +221,15 @@ class SIMSwapAttack {
         redirected_to: 'attacker_phone'
       };
 
-      console.log(`📨 [SMS INTERCEPTED] Service: ${interceptedSMS.service}`);
-      console.log(`🔢 Code: ${interceptedSMS.sms_content.match(/\d{6}/)[0]}`);
+      console.log(`
+📨 [SMS INTERCEPTION] Service: ${interceptedSMS.service}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📱 2FA Code: ${interceptedSMS.sms_content.match(/\d{6}/)[0]}
+🎯 Original Target: Victim Phone
+📲 Redirected To: Attacker Device  
+⏰ Intercepted At: ${interceptedSMS.intercepted_at}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`);
 
       // Update attack data with intercepted SMS
       const query = `

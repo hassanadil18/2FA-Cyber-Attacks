@@ -72,6 +72,129 @@ npm start  # Runs on http://localhost:3000
 
 ---
 
+## 🧪 Attack Testing Guide
+
+### Prerequisites for Testing
+1. Start backend: `cd backend && npm start` (Port 5000)
+2. Start frontend: `cd frontend && npm start` (Port 3000)
+3. Open browser: http://localhost:3000
+
+### 1. Phishing Attack Testing
+
+**Step 1:** Launch Phishing Attack
+- Navigate to "Attack Simulation" → "Phishing Attack"
+- Target Email: `victim@example.com`
+- Attack Type: `credential_harvest`
+- Template: `fake_login_page`
+- Click "Launch Attack"
+
+**Step 2:** Test Credential Capture
+- Click the phishing URL in the attack result
+- Enter test credentials (any username/password/2FA)
+- Check backend terminal for captured data:
+
+```
+🎯 [PHISHING SUCCESS] Attack ID: [attack-id]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+👤 Username: victim@example.com
+🔑 Password: [captured-password]
+📱 2FA Code: [captured-code]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### 2. Man-in-the-Middle (MITM) Attack Testing
+
+**Step 1:** Launch MITM Attack
+- Navigate to "Attack Simulation" → "Man-in-the-Middle Attack"
+- Target IP: `192.168.1.100`
+- Method: `arp_spoofing`
+- Interface: `eth0`
+- Enable SSL Strip: ✅
+- Click "Launch Attack"
+
+**Step 2:** Test Traffic Interception
+```bash
+# Windows PowerShell
+curl.exe "http://localhost:5000/api/dashboard/stats" --proxy "http://localhost:8080" -H "Authorization: Bearer test-token-123456"
+
+# Linux/Mac
+curl "http://localhost:5000/api/dashboard/stats" --proxy "http://localhost:8080" -H "Authorization: Bearer test-token-123456"
+
+# Alternative test commands
+curl.exe "http://localhost:5000/api/auth/me" --proxy "http://localhost:8080" -H "Authorization: Bearer test-token-456789"
+curl.exe "http://localhost:5000/api/dashboard/threat-intelligence" --proxy "http://localhost:8080" -H "Authorization: Bearer intercepted-token"
+```
+
+**Expected Terminal Output:**
+```
+🕵️ [MITM PROXY REQUEST] Method: GET
+📡 Target URL: http://localhost:5000/api/dashboard/stats
+🔐 Authorization: Bearer test-token-123456
+🌐 User Agent: curl/7.x.x
+⏰ Timestamp: 2025-xx-xxT12:xx:xx.xxxZ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎯 [MITM SUCCESS] Authentication token captured!
+```
+
+**Troubleshooting MITM:**
+- Ensure MITM attack is launched first from frontend
+- Proxy runs on port 8080 (check if attack shows "Proxy URL: http://localhost:8080")
+- If connection fails, restart backend and launch fresh MITM attack
+
+### 3. SIM Swap Attack Testing
+
+**Step 1:** Launch SIM Swap Attack
+- Navigate to "Attack Simulation" → "SIM Swap Attack"
+- Phone Number: `+1234567890`
+- Carrier: `Verizon`
+- Target Service: `Banking 2FA`
+- Click "Launch Attack"
+
+**Step 2:** Verify Attack Execution
+- Wait 5-10 seconds for attack simulation
+- Check backend terminal for results:
+
+```
+📱 [SIM SWAP SUCCESS] Attack ID: [attack-id]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📞 Phone Number: ✅ HIJACKED
+🆔 New SIM ID: [new-sim-id]
+📱 Control Status: ✅ ATTACKER CONTROLLED
+🔐 SMS Interception: ✅ ACTIVE
+💥 Impact: ALL SMS 2FA COMPROMISED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### 4. Replay Attack Testing
+
+**Step 1:** Launch Replay Attack
+- Navigate to "Attack Simulation" → "Replay Attack"
+- Token: `test-token-123456`
+- Target Endpoint: `/api/dashboard/stats`
+- Method: `GET`
+- Click "Launch Attack"
+
+**Step 2:** Verify Token Replay
+- Check terminal for replay attempt logs
+- Monitor for successful/failed replays
+
+### 5. Defense Testing
+
+**Test WebAuthn Defense:**
+- Navigate to "Defense Center" → "WebAuthn Defense"
+- Click "Enable WebAuthn"
+- Try authenticating with biometrics/security key
+
+**Test Rate Limiting:**
+- Make multiple rapid API requests
+- Observe rate limiting activation
+
+**Test Device Binding:**
+- Login from different browsers/devices
+- Verify device binding prompts
+
+---
+
 ## 🔧 Configuration
 
 ### Environment Variables

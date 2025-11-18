@@ -445,6 +445,138 @@ router.get('/logs', authMiddleware, async (req, res) => {
   }
 });
 
+// Get captured credentials from specific attack
+router.get('/:attackId/captured-data', authMiddleware, async (req, res) => {
+  try {
+    const database = require('../models/database');
+    const { attackId } = req.params;
+    
+    const query = `
+      SELECT 
+        id,
+        attack_type,
+        target_user_id,
+        attacker_ip,
+        attack_data,
+        status,
+        attack_details,
+        success,
+        captured_credentials,
+        created_at
+      FROM attack_logs
+      WHERE id = ?
+    `;
+
+    database.getDB().get(query, [attackId], (err, row) => {
+      if (err) {
+        console.error('Error fetching attack data:', err);
+        return res.status(500).json({ error: 'Failed to fetch attack data' });
+      }
+      
+      if (!row) {
+        return res.status(404).json({ error: 'Attack not found' });
+      }
+
+      // Parse JSON data
+      let attackData = {};
+      let capturedCredentials = {};
+      
+      try {
+        attackData = row.attack_data ? JSON.parse(row.attack_data) : {};
+        capturedCredentials = row.captured_credentials ? JSON.parse(row.captured_credentials) : {};
+      } catch (parseErr) {
+        console.error('Error parsing JSON:', parseErr);
+      }
+
+      res.json({
+        attack_id: row.id,
+        attack_type: row.attack_type,
+        status: row.status,
+        success: Boolean(row.success),
+        created_at: row.created_at,
+        attack_details: row.attack_details,
+        attack_data: attackData,
+        captured_credentials: capturedCredentials,
+        has_captured_data: Object.keys(capturedCredentials).length > 0,
+        summary: {
+          username: capturedCredentials.username || 'N/A',
+          password_captured: capturedCredentials.password ? '✓ Yes' : '✗ No',
+          totp_captured: capturedCredentials.totp || capturedCredentials.otp ? '✓ Yes' : '✗ No',
+          session_token: capturedCredentials.session_token ? '✓ Yes' : '✗ No',
+          intercepted_requests: attackData.intercepted_requests || 0
+        }
+      });
+    });
+  } catch (error) {
+    console.error('Error in captured-data endpoint:', error);
+    res.status(500).json({ error: 'Failed to retrieve captured data' });
+  }
+});
+
+// Test endpoint to check latest captured credentials
+router.get('/test/latest-captures', authMiddleware, async (req, res) => {
+  try {
+    const database = require('../models/database');
+    const attackType = req.query.type || 'mitm';
+    
+    const query = `
+      SELECT 
+        id,
+        attack_type,
+        status,
+        success,
+        captured_credentials,
+        attack_data,
+        created_at
+      FROM attack_logs
+      WHERE attack_type = ?
+      ORDER BY created_at DESC
+      LIMIT 5
+    `;
+
+    database.getDB().all(query, [attackType], (err, rows) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error', details: err.message });
+      }
+      
+      const results = rows.map(row => {
+        let capturedCreds = {};
+        let attackData = {};
+        
+        try {
+          capturedCreds = row.captured_credentials ? JSON.parse(row.captured_credentials) : {};
+          attackData = row.attack_data ? JSON.parse(row.attack_data) : {};
+        } catch (e) {
+          console.error('Parse error:', e);
+        }
+        
+        return {
+          attack_id: row.id,
+          attack_type: row.attack_type,
+          success: Boolean(row.success),
+          timestamp: row.created_at,
+          has_credentials: Object.keys(capturedCreds).length > 0,
+          credentials: capturedCreds,
+          proxy_url: attackData.proxy_url,
+          intercepted_count: attackData.intercepted_requests || 0
+        };
+      });
+      
+      res.json({
+        total: results.length,
+        attack_type: attackType,
+        attacks: results,
+        summary: {
+          successful_captures: results.filter(r => r.has_credentials).length,
+          total_attacks: results.length
+        }
+      });
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch test data', details: error.message });
+  }
+});
+
 // Health check
 router.get('/health', (req, res) => {
   res.json({ 

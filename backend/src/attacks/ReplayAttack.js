@@ -145,22 +145,40 @@ class ReplayAttack {
         console.log(`📊 Result: ${replayResult.success ? 'SUCCESS' : 'FAILED'}`);
         console.log(`💡 Reason: ${replayResult.reason}`);
 
-        // Update attack with replay results
+        // Prepare captured credentials data
+        const capturedCreds = {
+          captured_token: attackData.captured_token,
+          token_type: attackData.target_type,
+          replay_success: replayResult.success,
+          replay_attempts: attackData.replay_attempts,
+          defenses_triggered: replayResult.defenses_triggered,
+          timestamp: replayResult.execution_timestamp,
+          capture_method: attackData.method
+        };
+
+        // Update attack with replay results and captured credentials
         const updateQuery = `
           UPDATE attack_logs 
           SET status = ?,
+              success = ?,
+              captured_credentials = ?,
               attack_data = json_patch(attack_data, json('{"replay_execution": ' || json(?) || ', "completed_at": "' || datetime('now') || '"}'))
           WHERE id = ?
         `;
 
         database.getDB().run(updateQuery, [
           replayResult.success ? 'successful' : 'failed',
+          replayResult.success ? 1 : 0,
+          JSON.stringify(capturedCreds),
           JSON.stringify(replayResult),
           attackId
         ], function(updateErr) {
           if (updateErr) {
             reject(updateErr);
           } else {
+            console.log(`✅ [REPLAY ${replayResult.success ? 'SUCCESS' : 'FAILED'}] Attack ${attackId} - replay attempt recorded!`);
+            console.log(`📊 Database updated with replay results`);
+            
             // Log security event
             const eventSeverity = replayResult.success ? 'high' : 'medium';
             const eventDescription = replayResult.success ? 
