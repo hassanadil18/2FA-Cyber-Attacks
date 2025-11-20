@@ -1,23 +1,23 @@
-# 🔐 2FA Cyber Attacks Lab
+#  2FA Cyber Attacks Lab
 
 Educational platform demonstrating Two-Factor Authentication (2FA) vulnerabilities through simulated attack scenarios including phishing, MITM, SIM swap, and replay attacks.
 
-> ⚠️ **EDUCATIONAL USE ONLY** - This project is for learning purposes. Never use against real systems without permission.
+>  **EDUCATIONAL USE ONLY** - This project is for learning purposes. Never use against real systems without permission.
 
 ## Features
 
-- 🎣 **Phishing Attack** - Fake login page simulations
-- 🔄 **MITM Attack** - Session hijacking demonstrations  
-- 📱 **SIM Swap Attack** - Phone number takeover scenarios
-- 🔁 **Replay Attack** - Token reuse vulnerability testing
-- 🛡️ **Defense Mechanisms** - WebAuthn, rate limiting, device binding
-- 📊 **Real-time Dashboard** - Attack monitoring and analytics
+-  **Phishing Attack** - Fake login page simulations
+-  **MITM Attack** - Session hijacking demonstrations  
+-  **SIM Swap Attack** - Phone number takeover scenarios
+-  **Replay Attack** - Token reuse vulnerability testing
+-  **Defense Mechanisms** - WebAuthn, rate limiting, device binding
+-  **Real-time Dashboard** - Attack monitoring and analytics
 
 **Tech Stack:** React 18 + TypeScript + TailwindCSS | Node.js + Express + SQLite | Docker
 
 ---
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Prerequisites
 - Docker Desktop **OR** Node.js 20+
@@ -62,7 +62,7 @@ npm start  # Runs on http://localhost:3000
 
 ---
 
-## 📖 Usage
+##  Usage
 
 1. **Register Account** - Create user at http://localhost:3000
 2. **Setup 2FA** - Enable TOTP with Google Authenticator
@@ -72,7 +72,7 @@ npm start  # Runs on http://localhost:3000
 
 ---
 
-## 🧪 Attack Testing Guide
+##  Attack Testing Guide
 
 ### Prerequisites for Testing
 1. Start backend: `cd backend && npm start` (Port 5000)
@@ -94,11 +94,11 @@ npm start  # Runs on http://localhost:3000
 - Check backend terminal for captured data:
 
 ```
-🎯 [PHISHING SUCCESS] Attack ID: [attack-id]
+ [PHISHING SUCCESS] Attack ID: [attack-id]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-👤 Username: victim@example.com
-🔑 Password: [captured-password]
-📱 2FA Code: [captured-code]
+ Username: victim@example.com
+ Password: [captured-password]
+ 2FA Code: [captured-code]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -109,7 +109,7 @@ npm start  # Runs on http://localhost:3000
 - Target IP: `192.168.1.100`
 - Method: `arp_spoofing`
 - Interface: `eth0`
-- Enable SSL Strip: ✅
+- Enable SSL Strip: 
 - Click "Launch Attack"
 
 **Step 2:** Test Traffic Interception
@@ -127,13 +127,13 @@ curl.exe "http://localhost:5000/api/dashboard/threat-intelligence" --proxy "http
 
 **Expected Terminal Output:**
 ```
-🕵️ [MITM PROXY REQUEST] Method: GET
-📡 Target URL: http://localhost:5000/api/dashboard/stats
-🔐 Authorization: Bearer test-token-123456
-🌐 User Agent: curl/7.x.x
-⏰ Timestamp: 2025-xx-xxT12:xx:xx.xxxZ
+ [MITM PROXY REQUEST] Method: GET
+ Target URL: http://localhost:5000/api/dashboard/stats
+ Authorization: Bearer test-token-123456
+ User Agent: curl/7.x.x
+ Timestamp: 2025-xx-xxT12:xx:xx.xxxZ
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🎯 [MITM SUCCESS] Authentication token captured!
+ [MITM SUCCESS] Authentication token captured!
 ```
 
 **Troubleshooting MITM:**
@@ -155,13 +155,13 @@ curl.exe "http://localhost:5000/api/dashboard/threat-intelligence" --proxy "http
 - Check backend terminal for results:
 
 ```
-📱 [SIM SWAP SUCCESS] Attack ID: [attack-id]
+ [SIM SWAP SUCCESS] Attack ID: [attack-id]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📞 Phone Number: ✅ HIJACKED
-🆔 New SIM ID: [new-sim-id]
-📱 Control Status: ✅ ATTACKER CONTROLLED
-🔐 SMS Interception: ✅ ACTIVE
-💥 Impact: ALL SMS 2FA COMPROMISED
+ Phone Number:  HIJACKED
+ New SIM ID: [new-sim-id]
+ Control Status:  ATTACKER CONTROLLED
+ SMS Interception:  ACTIVE
+ Impact: ALL SMS 2FA COMPROMISED
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -195,7 +195,7 @@ curl.exe "http://localhost:5000/api/dashboard/threat-intelligence" --proxy "http
 
 ---
 
-## 🔧 Configuration
+##  Configuration
 
 ### Environment Variables
 
@@ -233,7 +233,7 @@ docker-compose up -d --build
 
 ---
 
-## 📂 Project Structure
+##  Project Structure
 
 ```
 2FA-Cyber-Attacks/
@@ -259,7 +259,7 @@ docker-compose up -d --build
 
 ---
 
-## 🔒 Security Notes
+##  Security Notes
 
 - SQLite database stores simulated data locally
 - JWT tokens expire in 24 hours
@@ -269,7 +269,7 @@ docker-compose up -d --build
 
 ---
 
-## 🐛 Troubleshooting
+##  Troubleshooting
 
 **Port conflicts:**
 ```bash
@@ -294,7 +294,7 @@ node create-database.js
 
 ---
 
-## 📝 License
+##  License
 
 MIT License - Educational use only
 

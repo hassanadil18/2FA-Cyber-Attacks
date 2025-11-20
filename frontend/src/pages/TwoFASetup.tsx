@@ -131,10 +131,10 @@ const TwoFASetup: React.FC = () => {
   };
 
   const tabs = [
-    { id: 'totp', name: 'Authenticator App', icon: '📱' },
-    { id: 'sms', name: 'SMS', icon: '💬' },
-    { id: 'email', name: 'Email', icon: '📧' },
-    { id: 'push', name: 'Push Notification', icon: '🔔' }
+    { id: 'totp', name: 'Authenticator App', icon: '' },
+    { id: 'sms', name: 'SMS', icon: '' },
+    { id: 'email', name: 'Email', icon: '' },
+    { id: 'push', name: 'Push Notification', icon: '' }
   ];
 
   return (
@@ -352,7 +352,7 @@ const TwoFASetup: React.FC = () => {
 
                 {pushToken && (
                   <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-                    <h4 className="font-medium text-blue-800 mb-2">📱 Simulated Push Notification</h4>
+                    <h4 className="font-medium text-blue-800 mb-2">Simulated Push Notification</h4>
                     <p className="text-blue-700 text-sm mb-3">
                       Login attempt detected. Token: <code className="bg-white px-1 rounded">{pushToken}</code>
                     </p>

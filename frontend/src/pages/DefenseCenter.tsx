@@ -93,12 +93,12 @@ const DefenseCenter: React.FC = () => {
 
   const fetchDefenseStatus = async () => {
     try {
-      console.log('📊 Fetching defense status...');
+      console.log('Fetching defense status...');
       const response = await authAPI.get('/defenses/status');
       setDefenseStatus(response.data);
-      console.log('✅ Defense status loaded:', response.data);
+      console.log('Defense status loaded:', response.data);
     } catch (error: any) {
-      console.error('❌ Failed to fetch defense status:', error);
+      console.error('Failed to fetch defense status:', error);
       // Set default status if fetch fails
       setDefenseStatus({
         webauthn: {
@@ -126,36 +126,36 @@ const DefenseCenter: React.FC = () => {
 
   const fetchDefenseLogs = async () => {
     try {
-      console.log('📋 Fetching defense logs...');
+      console.log('Fetching defense logs...');
       const response = await authAPI.get('/defenses/logs');
       setDefenseLogs(response.data.logs || []);
-      console.log(`✅ Loaded ${response.data.logs?.length || 0} defense logs`);
+      console.log(`Loaded ${response.data.logs?.length || 0} defense logs`);
     } catch (error: any) {
-      console.error('❌ Failed to fetch defense logs:', error);
+      console.error('Failed to fetch defense logs:', error);
       setDefenseLogs([]);
     }
   };
 
   const fetchWebAuthnDevices = async () => {
     try {
-      console.log('🔐 Fetching WebAuthn devices...');
+      console.log('Fetching WebAuthn devices...');
       const response = await authAPI.get('/defenses/webauthn/devices');
       setWebauthnDevices(response.data || []);
-      console.log(`✅ Loaded ${response.data?.length || 0} WebAuthn devices`);
+      console.log(`Loaded ${response.data?.length || 0} WebAuthn devices`);
     } catch (error: any) {
-      console.error('❌ Failed to fetch WebAuthn devices:', error);
+      console.error('Failed to fetch WebAuthn devices:', error);
       setWebauthnDevices([]);
     }
   };
 
   const fetchTrustedDevices = async () => {
     try {
-      console.log('📱 Fetching trusted devices...');
+      console.log('Fetching trusted devices...');
       const response = await authAPI.get('/defenses/device-binding/devices');
       setTrustedDevices(response.data || []);
-      console.log(`✅ Loaded ${response.data?.length || 0} trusted devices`);
+      console.log(`Loaded ${response.data?.length || 0} trusted devices`);
     } catch (error: any) {
-      console.error('❌ Failed to fetch trusted devices:', error);
+      console.error('Failed to fetch trusted devices:', error);
       setTrustedDevices([]);
     }
   };
@@ -179,7 +179,7 @@ const DefenseCenter: React.FC = () => {
         attestationType: 'packed'
       };
 
-      console.log('🔐 Registering simulated WebAuthn device:', simulatedCredential.deviceName);
+      console.log('Registering simulated WebAuthn device:', simulatedCredential.deviceName);
       
       const response = await authAPI.post('/defenses/webauthn/register', simulatedCredential);
       
@@ -210,7 +210,7 @@ const DefenseCenter: React.FC = () => {
         doNotTrack: navigator.doNotTrack
       };
 
-      console.log('📱 Binding device with info:', deviceInfo);
+      console.log('Binding device with info:', deviceInfo);
 
       const response = await authAPI.post('/defenses/device-binding/bind', {
         deviceInfo,
@@ -235,7 +235,7 @@ const DefenseCenter: React.FC = () => {
   const updateRateLimitConfig = async () => {
     setLoading(true);
     try {
-      console.log('⚙️ Updating rate limiting config:', rateLimitConfig);
+      console.log('Updating rate limiting config:', rateLimitConfig);
       
       const response = await authAPI.post('/defenses/rate-limiting/config', rateLimitConfig);
       
@@ -253,7 +253,7 @@ const DefenseCenter: React.FC = () => {
   const updateAlertConfig = async () => {
     setLoading(true);
     try {
-      console.log('🚨 Updating alert system config:', alertConfig);
+      console.log('Updating alert system config:', alertConfig);
       
       const response = await authAPI.post('/defenses/alert-system/config', alertConfig);
       

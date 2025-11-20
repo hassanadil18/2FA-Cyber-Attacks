@@ -4,8 +4,8 @@ const RateLimiting = require('./RateLimiting');
 const AlertSystem = require('./AlertSystem');
 
 module.exports = {
-  WebAuthnDefense,
-  DeviceBinding,
-  RateLimiting,
-  AlertSystem
+ WebAuthnDefense,
+ DeviceBinding,
+ RateLimiting,
+ AlertSystem
 };
